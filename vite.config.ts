@@ -1,7 +1,16 @@
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  test: {
+    environment: 'jsdom',
+    setupFiles: './src/test/setup.ts',
+    exclude: ['node_modules/**', 'dist/**', 'e2e/**'],
+    coverage: {
+      include: ['src/infra/appointment/services/appointment-query-params.ts'],
+      reporter: ['text', 'lcov'],
+    },
+  },
 })
