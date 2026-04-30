@@ -10,6 +10,7 @@ RUN pnpm --filter web build
 
 FROM node:22-alpine AS runtime
 WORKDIR /app
+RUN corepack enable
 COPY --from=build /app ./
 EXPOSE 5173
-CMD ["pnpm", "--filter", "web", "preview", "--host", "0.0.0.0"]
+CMD ["pnpm", "--filter", "web", "preview", "--host", "0.0.0.0", "--port", "5173"]
