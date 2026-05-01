@@ -61,7 +61,7 @@ export function CalendarMonthGrid({
   return (
     <section
       className={`mb-8 flex w-full shrink-0 flex-col rounded-[3rem] border border-slate-50 bg-white p-8 shadow-sm transition-all duration-500 ${
-        compact ? 'min-h-[420px]' : 'min-h-[480px]'
+        compact ? 'min-h-[340px]' : 'min-h-[480px]'
       }`}
       aria-label="Calendario mensual"
     >
@@ -101,7 +101,7 @@ export function CalendarMonthGrid({
       <div className="grid flex-1 grid-cols-7 gap-3 overflow-hidden">
         {cells.map((cell, i) => {
           if (cell === null) {
-            return <div key={`empty-${i}`} className="h-12 sm:h-14" aria-hidden />;
+            return <div key={`empty-${i}`} className={compact ? 'h-9 sm:h-10' : 'h-12 sm:h-14'} aria-hidden />;
           }
           const iso = toIsoDate(year, month, cell);
           const isSelected = selectedDay === cell;
@@ -111,7 +111,9 @@ export function CalendarMonthGrid({
               key={iso}
               type="button"
               onClick={() => onSelectDate(iso)}
-              className={`relative flex h-12 flex-col items-center justify-center rounded-[1.5rem] border transition-all sm:h-14 ${
+              className={`relative flex flex-col items-center justify-center rounded-[1.5rem] border transition-all ${
+                compact ? 'h-9 sm:h-10' : 'h-12 sm:h-14'
+              } ${
                 isSelected
                   ? 'z-10 scale-105 border-teal-400 bg-teal-500 text-white shadow-xl shadow-teal-500/40'
                   : 'border-slate-50 bg-white text-slate-600 hover:border-teal-100 hover:bg-teal-50/20'

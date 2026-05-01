@@ -1,9 +1,11 @@
-import { CalendarCheck, ClipboardList, History } from 'lucide-react';
+import { ArrowLeft, CalendarCheck, ClipboardList, History } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useCallback, useMemo, useState } from 'react';
 import type {
   AppointmentProjectionRequest,
   AppointmentQueryFilters,
 } from '../../domains/appointment/dtos/appointment.dto';
+import type { AppointmentListDocument } from '../../domains/appointment/models/appointment.model';
 import { useAppointmentsCalendar } from '../../infra/appointment/hooks/use-appointments-calendar';
 import { useSpecialtiesGetAll } from '../../infra/specialty/hooks/use-specialties-get-all';
 import { AppointmentDetailPanel } from '../appointment/components/appointment-detail-panel';
@@ -19,6 +21,7 @@ export function AppointmentsCalendarPage() {
   const [patientId, setPatientId] = useState('');
   const [specialtyId, setSpecialtyId] = useState('');
   const [selectedId, setSelectedId] = useState<string>();
+  const [isAgendaExpanded, setIsAgendaExpanded] = useState(false);
   const [isBookingOpen, setIsBookingOpen] = useState(false);
 
   const specialties = useSpecialtiesGetAll();
@@ -85,6 +88,24 @@ export function AppointmentsCalendarPage() {
       ),
     [calendar.data],
   );
+  const selectedAppointmentDocument = useMemo(
+    () =>
+      selectedId
+        ? getSelectedAppointmentDocument(selectedId, [
+            selectedDayDocument,
+            doctorDayReservations.data,
+            calendar.data,
+            patientHistory.data,
+          ])
+        : undefined,
+    [
+      calendar.data,
+      doctorDayReservations.data,
+      patientHistory.data,
+      selectedDayDocument,
+      selectedId,
+    ],
+  );
 
   const navigateMonth = useCallback((delta: number) => {
     const d = new Date(`${selectedDate}T12:00:00`);
@@ -113,6 +134,7 @@ export function AppointmentsCalendarPage() {
     if (doctorId) return CalendarCheck;
     return ClipboardList;
   }, [doctorId, patientId]);
+  const isGlobalAgenda = !patientId && !doctorId;
 
   const closeBooking = useCallback(() => {
     setIsBookingOpen(false);
@@ -120,6 +142,7 @@ export function AppointmentsCalendarPage() {
     setPatientId('');
     setSpecialtyId('');
     setSelectedId(undefined);
+    setIsAgendaExpanded(false);
   }, []);
 
   const toggleMobileBooking = useCallback(() => {
@@ -128,6 +151,7 @@ export function AppointmentsCalendarPage() {
       return;
     }
     setSelectedId(undefined);
+    setIsAgendaExpanded(false);
     setIsBookingOpen(true);
   }, [closeBooking, isBookingOpen]);
 
@@ -140,6 +164,7 @@ export function AppointmentsCalendarPage() {
           isBookingOpen={isBookingOpen}
           onNew={() => {
             setSelectedId(undefined);
+            setIsAgendaExpanded(false);
             setIsBookingOpen(true);
           }}
         />
@@ -158,42 +183,120 @@ export function AppointmentsCalendarPage() {
       }
       sidebar={<AgendaSidebar />}
     >
-      <CalendarMonthGrid
-        appointmentDates={appointmentDates}
-        compact={isBookingOpen}
-        selectedDate={selectedDate}
-        onNavigateMonth={navigateMonth}
-        onSelectDate={(date) => {
-          setSelectedDate(date);
-        }}
-      />
-      {calendar.error ? (
-        <div className="mb-6">
-          <StatusMessage kind="alert" message={calendar.error.message} />
-        </div>
-      ) : null}
-      <AppointmentList
-        ContextIcon={ContextIcon}
-        contextSubtitle={contextSubtitle}
-        contextTitle={contextTitle}
-        compactBottom={Boolean(patientId && doctorId)}
-        document={selectedDayDocument}
-        isLoading={patientId ? patientHistory.isLoading : calendar.isLoading}
-        showContact={false}
-        onSelect={setSelectedId}
-      />
-      {patientId && doctorId ? (
-        <AppointmentList
-          ContextIcon={CalendarCheck}
-          contextSubtitle={doctorReservationsSubtitle(selectedDate)}
-          contextTitle="Reservas del médico"
-          document={doctorDayReservations.data}
-          isLoading={doctorDayReservations.isLoading}
-          showContact={false}
-          onSelect={setSelectedId}
-        />
-      ) : null}
-      <AppointmentDetailPanel appointmentId={selectedId} />
+      <AnimatePresence mode="wait" initial={false}>
+        {!selectedId && !isAgendaExpanded ? (
+          <motion.div
+            key="agenda-main"
+            layout
+            initial={{ opacity: 0, y: -18 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -72, scale: 0.985 }}
+            transition={{ type: 'spring', stiffness: 240, damping: 30 }}
+          >
+            <motion.div layout transition={{ type: 'spring', stiffness: 260, damping: 30 }}>
+              <CalendarMonthGrid
+                appointmentDates={appointmentDates}
+                compact={isBookingOpen}
+                selectedDate={selectedDate}
+                onNavigateMonth={navigateMonth}
+                onSelectDate={(date) => {
+                  setSelectedDate(date);
+                  setSelectedId(undefined);
+                  setIsAgendaExpanded(false);
+                }}
+              />
+            </motion.div>
+            {calendar.error ? (
+              <div className="mb-6">
+                <StatusMessage kind="alert" message={calendar.error.message} />
+              </div>
+            ) : null}
+            <AppointmentList
+              ContextIcon={ContextIcon}
+              contextSubtitle={contextSubtitle}
+              contextTitle={contextTitle}
+              compactBottom={Boolean(patientId && doctorId)}
+              document={selectedDayDocument}
+              isLoading={patientId ? patientHistory.isLoading : calendar.isLoading}
+              visibleLimit={isGlobalAgenda ? 5 : undefined}
+              showContact={false}
+              onViewMore={isGlobalAgenda ? () => setIsAgendaExpanded(true) : undefined}
+              onSelect={setSelectedId}
+            />
+            {patientId && doctorId ? (
+              <AppointmentList
+                ContextIcon={CalendarCheck}
+                contextSubtitle={doctorReservationsSubtitle(selectedDate)}
+                contextTitle="Reservas del médico"
+                document={doctorDayReservations.data}
+                isLoading={doctorDayReservations.isLoading}
+                showContact={false}
+                onSelect={setSelectedId}
+              />
+            ) : null}
+          </motion.div>
+        ) : isAgendaExpanded ? (
+          <motion.div
+            key="agenda-expanded"
+            layout
+            initial={{ opacity: 0, y: 42, scale: 0.985 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 36, scale: 0.985 }}
+            transition={{ type: 'spring', stiffness: 240, damping: 30 }}
+          >
+            <div className="mb-6 flex justify-end px-4">
+              <button
+                type="button"
+                onClick={() => setIsAgendaExpanded(false)}
+                className="inline-flex items-center gap-2 rounded-2xl border border-slate-100 bg-white px-4 py-2 text-xs font-black tracking-widest text-slate-500 uppercase shadow-sm transition-all hover:border-teal-100 hover:bg-teal-50 hover:text-teal-700"
+              >
+                <ArrowLeft className="h-4 w-4" aria-hidden />
+                Regresar
+              </button>
+            </div>
+            <AppointmentList
+              ContextIcon={ClipboardList}
+              contextSubtitle={`Total de citas del ${new Date(`${selectedDate}T12:00:00`).toLocaleDateString('es-ES', {
+                day: '2-digit',
+                month: 'short',
+              })}`}
+              contextTitle="Agenda global completa"
+              document={selectedDayDocument}
+              isLoading={calendar.isLoading}
+              showContact={false}
+              onSelect={(id) => {
+                setIsAgendaExpanded(false);
+                setSelectedId(id);
+              }}
+            />
+          </motion.div>
+        ) : (
+          <motion.div
+            key="appointment-focus"
+            layout
+            initial={{ opacity: 0, y: 42, scale: 0.985 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 36, scale: 0.985 }}
+            transition={{ type: 'spring', stiffness: 240, damping: 30 }}
+          >
+            <AppointmentList
+              ContextIcon={ClipboardList}
+              compactBottom
+              contextSubtitle="Vista enfocada de la cita seleccionada"
+              contextTitle="Cita seleccionada"
+              document={selectedAppointmentDocument}
+              isLoading={false}
+              selectedId={selectedId}
+              showContact={false}
+              onSelect={setSelectedId}
+            />
+            <AppointmentDetailPanel
+              appointmentId={selectedId}
+              onBack={() => setSelectedId(undefined)}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </AgendaShell>
   );
 }
@@ -218,4 +321,21 @@ function formatDate(date: Date) {
 function doctorReservationsSubtitle(date: string) {
   const value = new Date(`${date}T12:00:00`);
   return `Reservas del ${value.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}`;
+}
+
+function getSelectedAppointmentDocument(
+  selectedId: string,
+  documents: Array<AppointmentListDocument | undefined>,
+): AppointmentListDocument | undefined {
+  const document = documents.find((item) =>
+    item?.data.some((appointment) => appointment.id === selectedId),
+  );
+  const appointment = document?.data.find((item) => item.id === selectedId);
+
+  if (!document || !appointment) return undefined;
+
+  return {
+    ...document,
+    data: [appointment],
+  };
 }

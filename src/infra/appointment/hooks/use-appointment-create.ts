@@ -9,6 +9,11 @@ export function useAppointmentCreate() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: CreateAppointmentDto) => useCase.execute(input),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['appointments-calendar'] }),
+    onSuccess: async (_data, input) => {
+      await queryClient.invalidateQueries({ queryKey: ['appointments-calendar'] });
+      if (input.patient) {
+        await queryClient.invalidateQueries({ queryKey: ['patients'] });
+      }
+    },
   });
 }

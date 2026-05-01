@@ -1,5 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
 import { AlignLeft, ClipboardList, MoreHorizontal, Stethoscope, UserRound } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
 import type {
   AppointmentListDocument,
   AppointmentResource,
@@ -33,6 +34,9 @@ export function AppointmentList({
   contextSubtitle,
   ContextIcon = ClipboardList,
   compactBottom = false,
+  selectedId,
+  visibleLimit,
+  onViewMore,
 }: {
   document?: AppointmentListDocument;
   isLoading: boolean;
@@ -42,6 +46,9 @@ export function AppointmentList({
   contextSubtitle: string;
   ContextIcon?: LucideIcon;
   compactBottom?: boolean;
+  selectedId?: string;
+  visibleLimit?: number;
+  onViewMore?: () => void;
 }) {
   const bottomClass = compactBottom ? 'pb-8' : 'pb-20';
 
@@ -71,29 +78,49 @@ export function AppointmentList({
     );
   }
 
+  const orderedAppointments = prioritizeSelected(document.data, selectedId);
+  const visibleAppointments = visibleLimit
+    ? orderedAppointments.slice(0, visibleLimit)
+    : orderedAppointments;
+  const hiddenCount = Math.max(orderedAppointments.length - visibleAppointments.length, 0);
+
   return (
     <div className={bottomClass}>
-      <div className="mb-6 flex items-center gap-3 px-4">
-        <div className="rounded-xl border border-slate-50 bg-white p-2 text-teal-600 shadow-sm">
-          <ContextIcon className="h-4 w-4" aria-hidden />
+      <div className="mb-6 flex flex-col gap-4 px-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <div className="rounded-xl border border-slate-50 bg-white p-2 text-teal-600 shadow-sm">
+            <ContextIcon className="h-4 w-4" aria-hidden />
+          </div>
+          <div>
+            <h3 className="text-base font-black text-slate-800">{contextTitle}</h3>
+            <p className="text-[9px] font-bold tracking-widest text-slate-400 uppercase">{contextSubtitle}</p>
+          </div>
         </div>
-        <div>
-          <h3 className="text-base font-black text-slate-800">{contextTitle}</h3>
-          <p className="text-[9px] font-bold tracking-widest text-slate-400 uppercase">{contextSubtitle}</p>
-        </div>
+        {hiddenCount > 0 && onViewMore ? (
+          <button
+            type="button"
+            onClick={onViewMore}
+            className="self-start rounded-2xl border border-teal-100 bg-white px-4 py-2 text-xs font-black tracking-widest text-teal-700 uppercase shadow-sm transition-all hover:bg-teal-50 hover:shadow-md"
+          >
+            Ver más
+          </button>
+        ) : null}
       </div>
 
-      <div className="flex flex-col gap-3 px-2">
-        {document.data.map((appointment) => (
-          <AppointmentCard
-            appointment={appointment}
-            included={document.included}
-            key={appointment.id}
-            onSelect={onSelect}
-            showContact={showContact}
-          />
-        ))}
-      </div>
+      <motion.div layout className="flex flex-col gap-3 px-2">
+        <AnimatePresence initial={false}>
+          {visibleAppointments.map((appointment) => (
+            <AppointmentCard
+              appointment={appointment}
+              included={document.included}
+              isSelected={appointment.id === selectedId}
+              key={appointment.id}
+              onSelect={onSelect}
+              showContact={showContact}
+            />
+          ))}
+        </AnimatePresence>
+      </motion.div>
     </div>
   );
 }
@@ -103,11 +130,13 @@ function AppointmentCard({
   included,
   showContact,
   onSelect,
+  isSelected,
 }: {
   appointment: AppointmentResource;
   included?: IncludedResource[];
   showContact: boolean;
   onSelect: (id: string) => void;
+  isSelected?: boolean;
 }) {
   const patient = byTypeAndId(included, 'patients', relationshipId(appointment, 'patient'));
   const doctor = byTypeAndId(included, 'doctors', relationshipId(appointment, 'doctor'));
@@ -144,7 +173,18 @@ function AppointmentCard({
   const confirmed = statusLabel.toLowerCase().includes('confirm');
 
   return (
-    <article className="group rounded-[2.2rem] border border-slate-50 bg-white p-5 shadow-sm transition-all hover:border-teal-100">
+    <motion.article
+      layout
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -8 }}
+      transition={{ type: 'spring', stiffness: 280, damping: 28 }}
+      className={`group rounded-[2.2rem] border bg-white p-5 shadow-sm transition-colors hover:border-teal-100 ${
+        isSelected
+          ? 'border-teal-200 ring-4 ring-teal-500/10 shadow-xl shadow-teal-500/10'
+          : 'border-slate-50'
+      }`}
+    >
       <div className="flex items-center justify-between gap-4">
         <div className="flex min-w-0 flex-1 items-center gap-6">
           <div className="flex min-w-[70px] flex-col items-center justify-center border-r border-slate-50 pr-4">
@@ -207,6 +247,19 @@ function AppointmentCard({
       {showContact && contact ? (
         <p className="mt-3 border-t border-slate-50 pt-3 text-xs text-slate-500">{contact}</p>
       ) : null}
-    </article>
+    </motion.article>
   );
+}
+
+function prioritizeSelected(
+  appointments: AppointmentResource[],
+  selectedId?: string,
+) {
+  if (!selectedId) return appointments;
+  const selected = appointments.find((appointment) => appointment.id === selectedId);
+  if (!selected) return appointments;
+  return [
+    selected,
+    ...appointments.filter((appointment) => appointment.id !== selectedId),
+  ];
 }
