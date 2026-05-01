@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type { AppointmentProjectionRequest } from '../../../domains/appointment/dtos/appointment.dto';
 import { useAppointmentDetail } from '../../../infra/appointment/hooks/use-appointment-detail';
 
 const resources = ['appointments', 'patients', 'doctors', 'specialties'] as const;
@@ -12,13 +13,11 @@ export function AppointmentDetailPanel({ appointmentId }: { appointmentId?: stri
     doctors: ['name'],
     specialties: ['name'],
   });
-  const detail = useAppointmentDetail(appointmentId, {
-    include: [
-      ...(includePatient ? ['patient'] : []),
-      ...(includeDoctorSpecialty ? ['doctor.specialty'] : []),
-    ],
-    fields,
-  });
+  const include: AppointmentProjectionRequest['include'] = [];
+  if (includePatient) include.push('patient');
+  if (includeDoctorSpecialty) include.push('doctor.specialty');
+  const projection: AppointmentProjectionRequest = { include, fields };
+  const detail = useAppointmentDetail(appointmentId, projection);
 
   function toggle(resource: keyof typeof fields, field: string) {
     setFields((current) => ({
@@ -44,7 +43,7 @@ export function AppointmentDetailPanel({ appointmentId }: { appointmentId?: stri
           {(resource === 'appointments'
             ? ['date', 'status', 'reason']
             : resource === 'patients'
-              ? ['fullName', 'dni']
+              ? ['fullName', 'dni', 'email', 'phone', 'address']
               : resource === 'doctors'
                 ? ['name', 'cmp']
                 : ['name']

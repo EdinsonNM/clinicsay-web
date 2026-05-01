@@ -1,12 +1,15 @@
 import { apiClient } from '../../../core/http/api-client';
 import type { CalendarQueryDto, CreateAppointmentDto } from '../../../domains/appointment/dtos/appointment.dto';
-import type { AppointmentDocument, AppointmentResource } from '../../../domains/appointment/models/appointment.model';
+import type { AppointmentDocument, AppointmentListDocument } from '../../../domains/appointment/models/appointment.model';
 import { AppointmentRepository } from '../../../domains/appointment/repositories/appointment.repository';
-import { parseAppointmentDocument } from './appointment-api.mapper';
+import { parseAppointmentDocument, parseAppointmentListDocument } from './appointment-api.mapper';
+import { buildAppointmentQuery } from './appointment-query-params';
 
 export class AppointmentServiceRepository implements AppointmentRepository {
-  async listCalendar(query: CalendarQueryDto): Promise<{ data: AppointmentResource[] }> {
-    return apiClient.get(`/appointments?from=${query.from}&to=${query.to}`);
+  async listCalendar(query: CalendarQueryDto): Promise<AppointmentListDocument> {
+    return parseAppointmentListDocument(
+      await apiClient.get(`/appointments${buildAppointmentQuery(query)}`),
+    );
   }
 
   create(input: CreateAppointmentDto) {

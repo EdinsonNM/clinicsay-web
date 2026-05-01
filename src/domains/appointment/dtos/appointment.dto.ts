@@ -1,6 +1,26 @@
 export interface CalendarQueryDto {
-  from: string;
-  to: string;
+  filters: AppointmentQueryFilters;
+  projection: AppointmentProjectionRequest;
+}
+
+export interface AppointmentQueryFilters {
+  date?: string;
+  from?: string;
+  to?: string;
+  doctorId?: string;
+  patientId?: string;
+  specialtyId?: string;
+}
+
+export type ProjectionResource =
+  | 'appointments'
+  | 'patients'
+  | 'doctors'
+  | 'specialties';
+
+export interface AppointmentProjectionRequest {
+  include: Array<'patient' | 'doctor' | 'doctor.specialty'>;
+  fields: Partial<Record<ProjectionResource, string[]>>;
 }
 
 export interface CreateAppointmentDto {
