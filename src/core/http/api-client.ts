@@ -21,7 +21,15 @@ export class ApiClient {
   }
 
   private async request<T>(path: string, init?: RequestInit): Promise<T> {
-    const response = await fetch(`${this.baseUrl}${path}`, init);
+    let response: Response;
+    try {
+      response = await fetch(`${this.baseUrl}${path}`, init);
+    } catch {
+      throw new AppError(
+        `No se pudo contactar la API configurada en ${this.baseUrl}`,
+        0,
+      );
+    }
     const json = (await response.json().catch(() => ({}))) as { message?: string | string[] };
     if (!response.ok) {
       const message = Array.isArray(json.message) ? json.message.join(', ') : json.message;

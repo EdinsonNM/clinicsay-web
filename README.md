@@ -1,73 +1,73 @@
-# React + TypeScript + Vite
+# ClinicSay Web
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Cliente React Vite del reto ClinicSay. Esta entrega es autocontenida para poder vivir como repositorio Git independiente y consume una API compatible mediante `VITE_API_BASE_URL`.
 
-Currently, two official plugins are available:
+## Requisitos
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Node.js 22 o compatible
+- pnpm 9.15.4
+- Docker Desktop o Docker Engine
+- API ClinicSay disponible para ejecutar el flujo completo
 
-## React Compiler
+## Variables
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+| Variable | Requerida | Proposito | Ejemplo |
+| --- | --- | --- | --- |
+| `VITE_API_BASE_URL` | Si | URL base de la API ClinicSay | `http://localhost:3000/api/v1` |
 
-## Expanding the ESLint configuration
+## Instalacion
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+pnpm install
+cp .env.example .env
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Desarrollo
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+pnpm dev
 ```
+
+URL esperada:
+
+- Web: `http://localhost:5173`
+
+## Validacion
+
+```bash
+pnpm build
+pnpm test
+pnpm test:cov
+pnpm lint
+pnpm e2e
+docker compose config
+```
+
+Coverage esperado:
+
+```text
+coverage/lcov.info
+```
+
+## Docker
+
+```bash
+VITE_API_BASE_URL=http://localhost:3000/api/v1 docker compose up --build
+```
+
+El valor de `VITE_API_BASE_URL` se usa en build porque Vite empaqueta variables `VITE_*` en el cliente.
+
+## Flujo Funcional
+
+- Login dummy de administrador.
+- Calendario de citas.
+- Creacion de cita con paciente existente o nuevo.
+- Filtro de doctores por especialidad.
+- Detalle de cita con `include` y `fields[resource]`.
+- Estados de error claros cuando la API configurada no esta disponible.
+
+## Troubleshooting
+
+- Si aparece `No se pudo contactar la API configurada`, revisar que `VITE_API_BASE_URL` apunte a una API activa.
+- Si Docker sigue usando una URL vieja, reconstruir con `docker compose build --no-cache`.
+- Si E2E falla por API no disponible, levantar primero la API o usar el compose raiz del orquestador.

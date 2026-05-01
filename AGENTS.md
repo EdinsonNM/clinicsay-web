@@ -3,6 +3,7 @@
 ## Alcance
 
 Este proyecto posee el frontend React Vite, Clean Architecture frontend, componentes UI, cliente API y tests frontend.
+Debe poder operar como entrega autocontenida desde `apps/web`, consumiendo API solo mediante `VITE_API_BASE_URL`.
 
 ## Reglas UX
 
@@ -25,10 +26,13 @@ Este proyecto posee el frontend React Vite, Clean Architecture frontend, compone
 - La capa `presentation` consume hooks y no repositories directamente.
 - Usar un cliente API tipado contra la API NestJS.
 - Mantener la URL base de API configurable con `VITE_API_BASE_URL`.
+- No importar codigo ni configuracion interna de `apps/api`.
 
 ## Comandos
 
-- `pnpm --filter web dev`
-- `pnpm --filter web test`
-- `pnpm --filter web test:coverage`
-- `pnpm --filter web e2e`
+- Desde la raíz: `pnpm --filter web dev`
+- Desde `apps/web`: `pnpm dev`
+- Desde `apps/web`: `pnpm test`
+- Desde `apps/web`: `pnpm test:coverage`
+- Desde `apps/web`: `pnpm e2e`
+- Desde `apps/web`: `docker compose config`
