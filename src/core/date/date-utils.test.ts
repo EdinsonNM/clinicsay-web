@@ -3,7 +3,11 @@ import {
   buildIsoDate,
   buildMonthCalendarCells,
   dateTimeLocalToIso,
+  formatDateTimePe,
+  formatMonthYearEs,
+  formatTimePe,
   getMonthRange,
+  isTodayInMonth,
   parseIsoDate,
   shiftIsoMonth,
   toAppointmentIsoDateTime,
@@ -38,5 +42,29 @@ describe('date utils', () => {
   it('normalizes appointment and slot times', () => {
     expect(toLocalTimeSlot('2026-05-15T09:30:00')).toBe('09:30');
     expect(toAppointmentIsoDateTime('2026-05-15', '09:30')).toBe(dateTimeLocalToIso('2026-05-15T09:30:00'));
+  });
+
+  it('formatDateTimePe y formatTimePe devuelven cadena vacía para entrada vacía o inválida', () => {
+    expect(formatDateTimePe('')).toBe('');
+    expect(formatTimePe('')).toBe('');
+    expect(formatDateTimePe('no-es-fecha')).toBe('');
+    expect(formatTimePe('invalid')).toBe('');
+  });
+
+  it('formatDateTimePe y formatTimePe formatean fechas válidas', () => {
+    expect(formatDateTimePe('2026-05-15T10:00:00.000Z')).toMatch(/2026/);
+    expect(formatTimePe('2026-05-15T10:00:00.000Z')).toMatch(/\d{1,2}/);
+  });
+
+  it('toLocalTimeSlot devuelve vacío para fecha inválida', () => {
+    expect(toLocalTimeSlot('')).toBe('');
+    expect(toLocalTimeSlot('xyz')).toBe('');
+  });
+
+  it('formatMonthYearEs e isTodayInMonth son deterministas en forma', () => {
+    expect(formatMonthYearEs(2026, 4)).toContain('2026');
+    const t = new Date();
+    expect(isTodayInMonth(t.getFullYear(), t.getMonth(), t.getDate())).toBe(true);
+    expect(isTodayInMonth(1999, 0, 1)).toBe(false);
   });
 });

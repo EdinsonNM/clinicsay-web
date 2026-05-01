@@ -11,8 +11,20 @@ export default defineConfig({
     setupFiles: './src/test/setup.ts',
     exclude: ['node_modules/**', 'dist/**', 'e2e/**'],
     coverage: {
-      include: ['src/infra/appointment/services/appointment-query-params.ts'],
-      reporter: ['text', 'lcov'],
+      provider: 'v8',
+      reporter: ['text', 'text-summary', 'lcov'],
+      reportsDirectory: './coverage',
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: [
+        'src/**/*.test.{ts,tsx}',
+        'src/test/**',
+        'src/main.tsx',
+        '**/*.d.ts',
+      ],
+      thresholds: {
+        statements: 70,
+        lines: 70,
+      },
     },
   },
 })
