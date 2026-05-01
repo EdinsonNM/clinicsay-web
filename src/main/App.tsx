@@ -1,20 +1,17 @@
-import { useState } from 'react';
-import type { AdminSession } from '../domains/auth/models/admin-session.model';
 import { AppProviders } from './providers/app-providers';
+import { useSession } from './providers/session.provider';
 import { AppRouter } from './router/app-router';
 
 export default function App() {
-  const [session, setSession] = useState<AdminSession>();
-
   return (
     <AppProviders>
-      {session ? (
-        <div className="h-screen overflow-hidden">
-          <AppRouter session={session} onLogin={setSession} />
-        </div>
-      ) : (
-        <AppRouter session={session} onLogin={setSession} />
-      )}
+      <SessionLayout />
     </AppProviders>
   );
+}
+
+function SessionLayout() {
+  const { session } = useSession();
+  const shell = <AppRouter />;
+  return session ? <div className="h-screen overflow-hidden">{shell}</div> : shell;
 }

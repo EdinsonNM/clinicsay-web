@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useReducer } from 'react';
 import type { FormEvent } from 'react';
 import { toAppointmentIsoDateTime } from '../../../../core/date/date-utils';
 import type { Doctor } from '../../../../domains/doctor/models/doctor.model';
@@ -17,6 +17,76 @@ import { PatientStep } from './patient-step';
 import { ScheduleStep } from './schedule-step';
 import { SpecialtyStep } from './specialty-step';
 
+type BookingState = {
+  step: number;
+  patientMode: PatientMode;
+  patientSearch: string;
+  selectedPatient: Patient | undefined;
+  newPatient: NewPatientDraft;
+  selectedSpecialty: Specialty | undefined;
+  selectedDoctor: Doctor | undefined;
+  selectedTime: string;
+  reason: string;
+  created: boolean;
+};
+
+function createInitialBookingState(): BookingState {
+  return {
+    step: 1,
+    patientMode: 'existing',
+    patientSearch: '',
+    selectedPatient: undefined,
+    newPatient: { fullName: '', dni: '' },
+    selectedSpecialty: undefined,
+    selectedDoctor: undefined,
+    selectedTime: '',
+    reason: '',
+    created: false,
+  };
+}
+
+type BookingAction =
+  | { type: 'RESET' }
+  | { type: 'SET_STEP'; step: number }
+  | { type: 'SET_PATIENT_MODE'; patientMode: PatientMode }
+  | { type: 'SET_PATIENT_SEARCH'; patientSearch: string }
+  | { type: 'SET_NEW_PATIENT'; newPatient: NewPatientDraft }
+  | { type: 'SELECT_PATIENT'; patient: Patient }
+  | { type: 'SELECT_SPECIALTY'; specialty: Specialty }
+  | { type: 'SELECT_DOCTOR'; doctor: Doctor }
+  | { type: 'SET_SELECTED_TIME'; selectedTime: string }
+  | { type: 'SET_REASON'; reason: string }
+  | { type: 'MARK_CREATED' };
+
+function bookingReducer(state: BookingState, action: BookingAction): BookingState {
+  switch (action.type) {
+    case 'RESET':
+      return createInitialBookingState();
+    case 'SET_STEP':
+      return { ...state, step: action.step };
+    case 'SET_PATIENT_MODE':
+      return { ...state, patientMode: action.patientMode };
+    case 'SET_PATIENT_SEARCH':
+      return { ...state, patientSearch: action.patientSearch };
+    case 'SET_NEW_PATIENT':
+      return { ...state, newPatient: action.newPatient };
+    case 'SELECT_PATIENT':
+      return { ...state, selectedPatient: action.patient, step: 2 };
+    case 'SELECT_SPECIALTY':
+      return { ...state, selectedSpecialty: action.specialty, selectedDoctor: undefined, step: 3 };
+    case 'SELECT_DOCTOR':
+      return { ...state, selectedDoctor: action.doctor, step: 4 };
+    case 'SET_SELECTED_TIME':
+      return { ...state, selectedTime: action.selectedTime };
+    case 'SET_REASON':
+      return { ...state, reason: action.reason };
+    case 'MARK_CREATED':
+      return { ...state, created: true };
+    default:
+      return state;
+  }
+}
+
 export function AppointmentBookingPanel({
   specialties,
   selectedDate,
@@ -32,16 +102,20 @@ export function AppointmentBookingPanel({
   onPatient: (value: string) => void;
   onSpecialty: (value: string) => void;
 }) {
-  const [step, setStep] = useState(1);
-  const [patientMode, setPatientMode] = useState<PatientMode>('existing');
-  const [patientSearch, setPatientSearch] = useState('');
-  const [selectedPatient, setSelectedPatient] = useState<Patient>();
-  const [newPatient, setNewPatient] = useState<NewPatientDraft>({ fullName: '', dni: '' });
-  const [selectedSpecialty, setSelectedSpecialty] = useState<Specialty>();
-  const [selectedDoctor, setSelectedDoctor] = useState<Doctor>();
-  const [selectedTime, setSelectedTime] = useState('');
-  const [reason, setReason] = useState('');
-  const [created, setCreated] = useState(false);
+  const [state, dispatch] = useReducer(bookingReducer, undefined, createInitialBookingState);
+
+  const {
+    step,
+    patientMode,
+    patientSearch,
+    selectedPatient,
+    newPatient,
+    selectedSpecialty,
+    selectedDoctor,
+    selectedTime,
+    reason,
+    created,
+  } = state;
 
   const patients = usePatientsSearch(patientSearch);
   const doctors = useDoctorsGetBySpecialty(selectedSpecialty?.id ?? '');
@@ -96,20 +170,11 @@ export function AppointmentBookingPanel({
         ? { patientId: selectedPatient.id }
         : { patient: newPatient }),
     });
-    setCreated(true);
+    dispatch({ type: 'MARK_CREATED' });
   }
 
   function resetFlow() {
-    setStep(1);
-    setPatientMode('existing');
-    setPatientSearch('');
-    setSelectedPatient(undefined);
-    setNewPatient({ fullName: '', dni: '' });
-    setSelectedSpecialty(undefined);
-    setSelectedDoctor(undefined);
-    setSelectedTime('');
-    setReason('');
-    setCreated(false);
+    dispatch({ type: 'RESET' });
     onPatient('');
     onSpecialty('');
     onDoctor('');
@@ -139,14 +204,13 @@ export function AppointmentBookingPanel({
             patientMode={patientMode}
             patientSearch={patientSearch}
             patients={patients.data?.data ?? []}
-            onContinueNewPatient={() => setStep(2)}
-            onNewPatient={setNewPatient}
-            onPatientMode={setPatientMode}
-            onPatientSearch={setPatientSearch}
+            onContinueNewPatient={() => dispatch({ type: 'SET_STEP', step: 2 })}
+            onNewPatient={(value) => dispatch({ type: 'SET_NEW_PATIENT', newPatient: value })}
+            onPatientMode={(patientMode) => dispatch({ type: 'SET_PATIENT_MODE', patientMode })}
+            onPatientSearch={(patientSearch) => dispatch({ type: 'SET_PATIENT_SEARCH', patientSearch })}
             onSelectPatient={(patient) => {
-              setSelectedPatient(patient);
+              dispatch({ type: 'SELECT_PATIENT', patient });
               onPatient(patient.id);
-              setStep(2);
             }}
           />
         ) : null}
@@ -154,12 +218,10 @@ export function AppointmentBookingPanel({
         {step === 2 ? (
           <SpecialtyStep
             specialties={specialties}
-            onBack={() => setStep(1)}
+            onBack={() => dispatch({ type: 'SET_STEP', step: 1 })}
             onSelectSpecialty={(specialty) => {
-              setSelectedSpecialty(specialty);
-              setSelectedDoctor(undefined);
+              dispatch({ type: 'SELECT_SPECIALTY', specialty });
               onSpecialty(specialty.id);
-              setStep(3);
             }}
           />
         ) : null}
@@ -168,11 +230,10 @@ export function AppointmentBookingPanel({
           <DoctorStep
             doctors={doctors.data?.data ?? []}
             isLoading={doctors.isLoading}
-            onBack={() => setStep(2)}
+            onBack={() => dispatch({ type: 'SET_STEP', step: 2 })}
             onSelectDoctor={(doctor) => {
-              setSelectedDoctor(doctor);
+              dispatch({ type: 'SELECT_DOCTOR', doctor });
               onDoctor(doctor.id);
-              setStep(4);
             }}
           />
         ) : null}
@@ -187,9 +248,9 @@ export function AppointmentBookingPanel({
             selectedDoctor={selectedDoctor}
             selectedSpecialty={selectedSpecialty}
             selectedTime={selectedTime}
-            onBack={() => setStep(3)}
-            onReason={setReason}
-            onSelectedTime={setSelectedTime}
+            onBack={() => dispatch({ type: 'SET_STEP', step: 3 })}
+            onReason={(reason) => dispatch({ type: 'SET_REASON', reason })}
+            onSelectedTime={(selectedTime) => dispatch({ type: 'SET_SELECTED_TIME', selectedTime })}
             onSubmit={submit}
           />
         ) : null}

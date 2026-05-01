@@ -1,31 +1,31 @@
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Activity, ArrowRight, Lock, Mail, ShieldCheck } from 'lucide-react';
-import { useState } from 'react';
-import type { FormEvent } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import type { AdminSession } from '../../domains/auth/models/admin-session.model';
-import { loginSchema } from '../../domains/auth/schemas/login.schema';
+import { loginSchema, type LoginInput } from '../../domains/auth/schemas/login.schema';
 import { useAuthLogin } from '../../infra/auth/hooks/use-auth-login';
 import { LoginInputField } from './login-input-field';
 
 export function LoginPage({ onLogin }: { onLogin: (session: AdminSession) => void }) {
   const login = useAuthLogin();
   const loginError = login.error?.message ?? '';
-  const [username, setUsername] = useState('admin');
-  const [password, setPassword] = useState('admin');
-  const [validationError, setValidationError] = useState('');
 
-  async function submit(event: FormEvent) {
-    event.preventDefault();
-    const parsed = loginSchema.safeParse({ username, password });
-    if (!parsed.success) {
-      setValidationError(parsed.error.issues[0]?.message ?? 'Datos invalidos');
-      return;
-    }
-    setValidationError('');
-    const session = await login.mutateAsync(parsed.data);
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginInput>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { username: 'admin', password: 'admin' },
+  });
+
+  async function onValidSubmit(data: LoginInput) {
+    const session = await login.mutateAsync(data);
     onLogin(session);
   }
 
-  const errorMessage = validationError || loginError;
+  const validationMessage = errors.username?.message ?? errors.password?.message ?? '';
+  const errorMessage = validationMessage || loginError;
 
   return (
     <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#F0F7F8] p-6 font-sans selection:bg-teal-100">
@@ -89,7 +89,7 @@ export function LoginPage({ onLogin }: { onLogin: (session: AdminSession) => voi
               <p className="text-sm font-medium text-slate-400">Ingresa tus credenciales de administrador</p>
             </header>
 
-            <form className="space-y-6" onSubmit={(event) => void submit(event)} noValidate>
+            <form className="space-y-6" onSubmit={(event) => void handleSubmit(onValidSubmit)(event)} noValidate>
               {errorMessage ? (
                 <div
                   role="alert"
@@ -99,27 +99,39 @@ export function LoginPage({ onLogin }: { onLogin: (session: AdminSession) => voi
                 </div>
               ) : null}
 
-              <LoginInputField
-                id="login-username"
-                label="Usuario"
-                icon={Mail}
-                type="text"
-                placeholder="usuario@clinicsay.com"
-                value={username}
-                onChange={setUsername}
-                autoComplete="username"
+              <Controller
+                name="username"
+                control={control}
+                render={({ field }) => (
+                  <LoginInputField
+                    id="login-username"
+                    label="Usuario"
+                    icon={Mail}
+                    type="text"
+                    placeholder="usuario@clinicsay.com"
+                    value={field.value}
+                    onChange={field.onChange}
+                    autoComplete="username"
+                  />
+                )}
               />
 
               <div className="space-y-1">
-                <LoginInputField
-                  id="login-password"
-                  label="Contraseña"
-                  icon={Lock}
-                  type="password"
-                  placeholder="••••••••••••"
-                  value={password}
-                  onChange={setPassword}
-                  autoComplete="current-password"
+                <Controller
+                  name="password"
+                  control={control}
+                  render={({ field }) => (
+                    <LoginInputField
+                      id="login-password"
+                      label="Contraseña"
+                      icon={Lock}
+                      type="password"
+                      placeholder="••••••••••••••"
+                      value={field.value}
+                      onChange={field.onChange}
+                      autoComplete="current-password"
+                    />
+                  )}
                 />
                 <div className="flex justify-end pr-2">
                   <button
