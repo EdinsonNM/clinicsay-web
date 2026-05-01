@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { AppointmentListDocument } from '../../../domains/appointment/models/appointment.model';
-import { getBlockedTimeSlots } from './appointment-context-panel';
+import { getBlockedTimeSlots } from './booking/booking-time-slots';
 
 describe('getBlockedTimeSlots', () => {
   it('marks existing doctor reservations as unavailable slots', () => {
