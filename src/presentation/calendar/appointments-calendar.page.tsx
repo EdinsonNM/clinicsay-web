@@ -29,10 +29,9 @@ export function AppointmentsCalendarPage() {
       from: monthRange.from,
       to: monthRange.to,
       ...(doctorId ? { doctorId } : {}),
-      ...(patientId ? { patientId } : {}),
       ...(specialtyId ? { specialtyId } : {}),
     }),
-    [doctorId, monthRange.from, monthRange.to, patientId, specialtyId],
+    [doctorId, monthRange.from, monthRange.to, specialtyId],
   );
 
   const projection: AppointmentProjectionRequest = useMemo(
@@ -50,7 +49,25 @@ export function AppointmentsCalendarPage() {
 
   const query = { filters, projection };
   const calendar = useAppointmentsCalendar(query);
+  const patientHistory = useAppointmentsCalendar(
+    {
+      filters: { patientId },
+      projection,
+    },
+    { enabled: Boolean(patientId) },
+  );
+  const doctorDayReservations = useAppointmentsCalendar(
+    {
+      filters: {
+        date: selectedDate,
+        ...(doctorId ? { doctorId } : {}),
+      },
+      projection,
+    },
+    { enabled: Boolean(patientId && doctorId) },
+  );
   const selectedDayDocument = useMemo(() => {
+    if (patientId && patientHistory.data) return patientHistory.data;
     if (!calendar.data) return undefined;
     return {
       ...calendar.data,
@@ -58,7 +75,7 @@ export function AppointmentsCalendarPage() {
         String(appointment.attributes.date ?? '').startsWith(selectedDate),
       ),
     };
-  }, [calendar.data, selectedDate]);
+  }, [calendar.data, patientHistory.data, patientId, selectedDate]);
   const appointmentDates = useMemo(
     () =>
       new Set(
@@ -86,9 +103,10 @@ export function AppointmentsCalendarPage() {
   }, [doctorId, patientId]);
 
   const contextSubtitle = useMemo(() => {
+    if (patientId) return 'Últimas visitas registradas';
     const d = new Date(`${selectedDate}T12:00:00`);
     return `Visión general del ${d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}`;
-  }, [selectedDate]);
+  }, [patientId, selectedDate]);
 
   const ContextIcon = useMemo(() => {
     if (patientId) return History;
@@ -96,10 +114,27 @@ export function AppointmentsCalendarPage() {
     return ClipboardList;
   }, [doctorId, patientId]);
 
+  const closeBooking = useCallback(() => {
+    setIsBookingOpen(false);
+    setDoctorId('');
+    setPatientId('');
+    setSpecialtyId('');
+    setSelectedId(undefined);
+  }, []);
+
+  const toggleMobileBooking = useCallback(() => {
+    if (isBookingOpen) {
+      closeBooking();
+      return;
+    }
+    setSelectedId(undefined);
+    setIsBookingOpen(true);
+  }, [closeBooking, isBookingOpen]);
+
   return (
     <AgendaShell
       mobileBookingOpen={isBookingOpen}
-      onMobileToggleBooking={() => setIsBookingOpen((open) => !open)}
+      onMobileToggleBooking={toggleMobileBooking}
       header={
         <AgendaHeader
           isBookingOpen={isBookingOpen}
@@ -112,7 +147,7 @@ export function AppointmentsCalendarPage() {
       panel={
         isBookingOpen ? (
           <AppointmentContextPanel
-            onCloseCreate={() => setIsBookingOpen(false)}
+            onCloseCreate={closeBooking}
             onDoctor={setDoctorId}
             onPatient={setPatientId}
             onSpecialty={setSpecialtyId}
@@ -141,11 +176,23 @@ export function AppointmentsCalendarPage() {
         ContextIcon={ContextIcon}
         contextSubtitle={contextSubtitle}
         contextTitle={contextTitle}
+        compactBottom={Boolean(patientId && doctorId)}
         document={selectedDayDocument}
-        isLoading={calendar.isLoading}
+        isLoading={patientId ? patientHistory.isLoading : calendar.isLoading}
         showContact={false}
         onSelect={setSelectedId}
       />
+      {patientId && doctorId ? (
+        <AppointmentList
+          ContextIcon={CalendarCheck}
+          contextSubtitle={doctorReservationsSubtitle(selectedDate)}
+          contextTitle="Reservas del médico"
+          document={doctorDayReservations.data}
+          isLoading={doctorDayReservations.isLoading}
+          showContact={false}
+          onSelect={setSelectedId}
+        />
+      ) : null}
       <AppointmentDetailPanel appointmentId={selectedId} />
     </AgendaShell>
   );
@@ -166,4 +213,9 @@ function getMonthRange(date: string) {
 
 function formatDate(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function doctorReservationsSubtitle(date: string) {
+  const value = new Date(`${date}T12:00:00`);
+  return `Reservas del ${value.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}`;
 }

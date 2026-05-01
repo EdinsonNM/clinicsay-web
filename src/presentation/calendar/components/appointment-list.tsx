@@ -32,6 +32,7 @@ export function AppointmentList({
   contextTitle,
   contextSubtitle,
   ContextIcon = ClipboardList,
+  compactBottom = false,
 }: {
   document?: AppointmentListDocument;
   isLoading: boolean;
@@ -40,15 +41,18 @@ export function AppointmentList({
   contextTitle: string;
   contextSubtitle: string;
   ContextIcon?: LucideIcon;
+  compactBottom?: boolean;
 }) {
+  const bottomClass = compactBottom ? 'pb-8' : 'pb-20';
+
   if (isLoading) {
     return (
-      <p className="pb-20 text-center text-sm font-bold text-slate-400 italic">Cargando citas...</p>
+      <p className={`${bottomClass} text-center text-sm font-bold text-slate-400 italic`}>Cargando citas...</p>
     );
   }
   if (!document || document.data.length === 0) {
     return (
-      <div className="pb-20">
+      <div className={bottomClass}>
         <div className="mb-6 flex items-center gap-3 px-4">
           <div className="rounded-xl border border-slate-50 bg-white p-2 text-teal-600 shadow-sm">
             <ContextIcon className="h-4 w-4" aria-hidden />
@@ -68,7 +72,7 @@ export function AppointmentList({
   }
 
   return (
-    <div className="pb-20">
+    <div className={bottomClass}>
       <div className="mb-6 flex items-center gap-3 px-4">
         <div className="rounded-xl border border-slate-50 bg-white p-2 text-teal-600 shadow-sm">
           <ContextIcon className="h-4 w-4" aria-hidden />

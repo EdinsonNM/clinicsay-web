@@ -5,9 +5,13 @@ import { AppointmentServiceRepository } from '../services/appointment.service.re
 
 const useCase = new ListCalendarUseCase(new AppointmentServiceRepository());
 
-export function useAppointmentsCalendar(query: CalendarQueryDto) {
+export function useAppointmentsCalendar(
+  query: CalendarQueryDto,
+  options: { enabled?: boolean } = {},
+) {
   return useQuery({
     queryKey: ['appointments-calendar', query],
     queryFn: () => useCase.execute(query),
+    enabled: options.enabled ?? true,
   });
 }

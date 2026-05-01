@@ -13,12 +13,14 @@ import {
   X,
 } from 'lucide-react';
 import type { ComponentProps } from 'react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
+import type { AppointmentListDocument } from '../../../domains/appointment/models/appointment.model';
 import type { Doctor } from '../../../domains/doctor/models/doctor.model';
 import type { Patient } from '../../../domains/patient/models/patient.model';
 import type { Specialty } from '../../../domains/specialty/models/specialty.model';
 import { useAppointmentCreate } from '../../../infra/appointment/hooks/use-appointment-create';
+import { useAppointmentsCalendar } from '../../../infra/appointment/hooks/use-appointments-calendar';
 import { useDoctorsGetBySpecialty } from '../../../infra/doctor/hooks/use-doctors-get-by-specialty';
 import { usePatientsSearch } from '../../../infra/patient/hooks/use-patients-search';
 import { StatusMessage } from '../../shared/status-message';
@@ -79,14 +81,48 @@ function AppointmentBookingPanel({
   const patients = usePatientsSearch(patientSearch);
   const doctors = useDoctorsGetBySpecialty(selectedSpecialty?.id ?? '');
   const create = useAppointmentCreate();
+  const doctorDaySchedule = useAppointmentsCalendar(
+    {
+      filters: {
+        date: selectedDate,
+        ...(selectedDoctor ? { doctorId: selectedDoctor.id } : {}),
+      },
+      projection: {
+        include: ['patient', 'doctor'],
+        fields: {
+          appointments: ['date', 'status', 'reason'],
+          patients: ['fullName'],
+          doctors: ['name'],
+        },
+      },
+    },
+    { enabled: Boolean(selectedDoctor && step === 4) },
+  );
+  const blockedSlots = useMemo(
+    () => getBlockedTimeSlots(doctorDaySchedule.data),
+    [doctorDaySchedule.data],
+  );
 
   const canConfirm = useMemo(() => {
     const hasPatient =
       patientMode === 'existing'
         ? Boolean(selectedPatient)
         : Boolean(newPatient.fullName.trim() && newPatient.dni.trim());
-    return Boolean(hasPatient && selectedSpecialty && selectedDoctor && selectedTime && reason.trim().length >= 4);
-  }, [newPatient.dni, newPatient.fullName, patientMode, reason, selectedDoctor, selectedPatient, selectedSpecialty, selectedTime]);
+    return Boolean(
+      hasPatient &&
+      selectedSpecialty &&
+      selectedDoctor &&
+      selectedTime &&
+      !blockedSlots.has(selectedTime) &&
+      reason.trim().length >= 4,
+    );
+  }, [blockedSlots, newPatient.dni, newPatient.fullName, patientMode, reason, selectedDoctor, selectedPatient, selectedSpecialty, selectedTime]);
+
+  useEffect(() => {
+    if (selectedTime && blockedSlots.has(selectedTime)) {
+      setSelectedTime('');
+    }
+  }, [blockedSlots, selectedTime]);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -377,20 +413,27 @@ function AppointmentBookingPanel({
               <div>
                 <h3 className="mb-3 text-[10px] font-black tracking-widest text-slate-400 uppercase">Horario</h3>
                 <div className="grid grid-cols-3 gap-2">
-                  {timeSlots.map((time) => (
-                    <button
-                      key={time}
-                      type="button"
-                      onClick={() => setSelectedTime(time)}
-                      className={`rounded-xl border py-3 text-[10px] font-black transition-all ${
-                        selectedTime === time
-                          ? 'border-teal-400 bg-teal-500 text-white shadow-xl'
-                          : 'border-slate-100 bg-white text-slate-500 hover:border-teal-200'
-                      }`}
-                    >
-                      {time}
-                    </button>
-                  ))}
+                  {timeSlots.map((time) => {
+                    const blocked = blockedSlots.has(time);
+                    return (
+                      <button
+                        key={time}
+                        type="button"
+                        disabled={blocked}
+                        aria-label={blocked ? `${time} reservado` : `${time} disponible`}
+                        onClick={() => setSelectedTime(time)}
+                        className={`rounded-xl border py-3 text-[10px] font-black transition-all ${
+                          blocked
+                            ? 'cursor-not-allowed border-rose-100 bg-rose-50 text-rose-300 line-through'
+                            : selectedTime === time
+                              ? 'border-teal-400 bg-teal-500 text-white shadow-xl'
+                              : 'border-slate-100 bg-white text-slate-500 hover:border-teal-200'
+                        }`}
+                      >
+                        {time}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -426,4 +469,24 @@ function AppointmentBookingPanel({
       </div>
     </aside>
   );
+}
+
+export function getBlockedTimeSlots(document?: AppointmentListDocument) {
+  return new Set(
+    (document?.data ?? [])
+      .filter((appointment) => isBlockingStatus(String(appointment.attributes.status ?? 'SCHEDULED')))
+      .map((appointment) => toLocalTimeSlot(String(appointment.attributes.date ?? '')))
+      .filter(Boolean),
+  );
+}
+
+function toLocalTimeSlot(value: string) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+}
+
+function isBlockingStatus(status: string) {
+  return !['CANCELLED', 'CANCELED', 'CANCELADA'].includes(status.toUpperCase());
 }

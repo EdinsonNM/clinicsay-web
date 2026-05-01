@@ -28,10 +28,10 @@ export function AgendaShell({
   onMobileToggleBooking: () => void;
 }) {
   return (
-    <div className="flex min-h-screen flex-col bg-[#F0F7F8] font-sans selection:bg-teal-100 lg:flex-row">
+    <div className="flex h-screen flex-col overflow-hidden bg-[#F0F7F8] font-sans selection:bg-teal-100 lg:flex-row">
       {sidebar}
 
-      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+      <div className="flex min-h-0 flex-1 overflow-hidden flex-col lg:flex-row">
         <section className="min-h-0 flex-1 overflow-y-auto p-6 pb-28 lg:p-10 lg:pb-10">
           <div className="mx-auto flex w-full max-w-4xl flex-col">{header}</div>
           <div className="mx-auto flex w-full max-w-4xl flex-col">{children}</div>

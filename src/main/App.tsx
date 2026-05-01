@@ -9,8 +9,7 @@ export default function App() {
   return (
     <AppProviders>
       {session ? (
-        <div className="app-shell">
-          
+        <div className="h-screen overflow-hidden">
           <AppRouter session={session} onLogin={setSession} />
         </div>
       ) : (
