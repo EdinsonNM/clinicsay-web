@@ -4,9 +4,6 @@ import type {
   AppointmentQueryFilters,
 } from '../../domains/appointment/dtos/appointment.dto';
 import { useAppointmentsCalendar } from '../../infra/appointment/hooks/use-appointments-calendar';
-import { buildAppointmentQuery } from '../../infra/appointment/services/appointment-query-params';
-import { useDoctorsGetBySpecialty } from '../../infra/doctor/hooks/use-doctors-get-by-specialty';
-import { usePatientsSearch } from '../../infra/patient/hooks/use-patients-search';
 import { useSpecialtiesGetAll } from '../../infra/specialty/hooks/use-specialties-get-all';
 import { AppointmentDetailPanel } from '../appointment/components/appointment-detail-panel';
 import { StatusMessage } from '../shared/status-message';
@@ -14,31 +11,27 @@ import { AgendaHeader, AgendaShell, AgendaSidebar } from './components/agenda-sh
 import { AppointmentContextPanel } from './components/appointment-context-panel';
 import { AppointmentList } from './components/appointment-list';
 import { CalendarMonthGrid } from './components/calendar-month-grid';
-import { ProjectionHint } from './components/projection-hint';
 
 export function AppointmentsCalendarPage() {
   const [selectedDate, setSelectedDate] = useState('2026-05-15');
-  const [from, setFrom] = useState('2026-05-01');
-  const [to, setTo] = useState('2026-05-31');
-  const [useRange, setUseRange] = useState(false);
   const [doctorId, setDoctorId] = useState('');
   const [patientId, setPatientId] = useState('');
   const [specialtyId, setSpecialtyId] = useState('');
-  const [showContact, setShowContact] = useState(false);
   const [selectedId, setSelectedId] = useState<string>();
+  const [isBookingOpen, setIsBookingOpen] = useState(false);
 
   const specialties = useSpecialtiesGetAll();
-  const doctors = useDoctorsGetBySpecialty(specialtyId || 's-1');
-  const patients = usePatientsSearch('');
+  const monthRange = useMemo(() => getMonthRange(selectedDate), [selectedDate]);
 
   const filters: AppointmentQueryFilters = useMemo(
     () => ({
-      ...(useRange ? { from, to } : { date: selectedDate }),
+      from: monthRange.from,
+      to: monthRange.to,
       ...(doctorId ? { doctorId } : {}),
       ...(patientId ? { patientId } : {}),
       ...(specialtyId ? { specialtyId } : {}),
     }),
-    [doctorId, from, patientId, selectedDate, specialtyId, to, useRange],
+    [doctorId, monthRange.from, monthRange.to, patientId, specialtyId],
   );
 
   const projection: AppointmentProjectionRequest = useMemo(
@@ -46,64 +39,93 @@ export function AppointmentsCalendarPage() {
       include: ['patient', 'doctor.specialty'],
       fields: {
         appointments: ['date', 'status', 'reason'],
-        patients: showContact
-          ? ['fullName', 'dni', 'email', 'phone', 'address']
-          : ['fullName'],
+        patients: ['fullName'],
         doctors: doctorId ? ['name', 'cmp'] : ['name'],
         specialties: ['name'],
       },
     }),
-    [doctorId, showContact],
+    [doctorId],
   );
 
   const query = { filters, projection };
   const calendar = useAppointmentsCalendar(query);
-  const generatedQuery = buildAppointmentQuery(query);
+  const selectedDayDocument = useMemo(() => {
+    if (!calendar.data) return undefined;
+    return {
+      ...calendar.data,
+      data: calendar.data.data.filter((appointment) =>
+        String(appointment.attributes.date ?? '').startsWith(selectedDate),
+      ),
+    };
+  }, [calendar.data, selectedDate]);
+  const appointmentDates = useMemo(
+    () =>
+      new Set(
+        (calendar.data?.data ?? [])
+          .map((appointment) => String(appointment.attributes.date ?? '').slice(0, 10))
+          .filter(Boolean),
+      ),
+    [calendar.data],
+  );
 
   return (
     <AgendaShell
-      header={<AgendaHeader onNew={() => setSelectedId(undefined)} />}
-      panel={
-        <AppointmentContextPanel
-          doctorId={doctorId}
-          doctors={doctors.data?.data ?? []}
-          from={from}
-          onDoctor={setDoctorId}
-          onFrom={setFrom}
-          onPatient={setPatientId}
-          onShowContact={setShowContact}
-          onSpecialty={setSpecialtyId}
-          onTo={setTo}
-          onUseRange={setUseRange}
-          patientId={patientId}
-          patients={patients.data?.data ?? []}
-          showContact={showContact}
-          specialties={specialties.data?.data ?? []}
-          specialtyId={specialtyId}
-          to={to}
-          useRange={useRange}
+      header={
+        <AgendaHeader
+          onNew={() => {
+            setSelectedId(undefined);
+            setIsBookingOpen(true);
+          }}
         />
+      }
+      panel={
+        isBookingOpen ? (
+          <AppointmentContextPanel
+            onCloseCreate={() => setIsBookingOpen(false)}
+            onDoctor={setDoctorId}
+            onPatient={setPatientId}
+            onSpecialty={setSpecialtyId}
+            selectedDate={selectedDate}
+            specialties={specialties.data?.data ?? []}
+          />
+        ) : null
       }
       sidebar={<AgendaSidebar />}
     >
       <CalendarMonthGrid
+        appointmentDates={appointmentDates}
         selectedDate={selectedDate}
         onSelectDate={(date) => {
           setSelectedDate(date);
-          setUseRange(false);
         }}
       />
-      <ProjectionHint query={generatedQuery} />
       {calendar.error && (
         <StatusMessage kind="alert" message={calendar.error.message} />
       )}
       <AppointmentList
-        document={calendar.data}
+        document={selectedDayDocument}
         isLoading={calendar.isLoading}
         onSelect={setSelectedId}
-        showContact={showContact}
+        showContact={false}
       />
       <AppointmentDetailPanel appointmentId={selectedId} />
     </AgendaShell>
   );
+}
+
+function getMonthRange(date: string) {
+  const value = new Date(`${date}T00:00:00`);
+  const year = value.getFullYear();
+  const month = value.getMonth();
+  const from = new Date(year, month, 1);
+  const to = new Date(year, month + 1, 0);
+
+  return {
+    from: formatDate(from),
+    to: formatDate(to),
+  };
+}
+
+function formatDate(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }

@@ -1,9 +1,11 @@
 const days = Array.from({ length: 31 }, (_, index) => index + 1);
 
 export function CalendarMonthGrid({
+  appointmentDates,
   selectedDate,
   onSelectDate,
 }: {
+  appointmentDates?: Set<string>;
   selectedDate?: string;
   onSelectDate: (date: string) => void;
 }) {
@@ -34,7 +36,8 @@ export function CalendarMonthGrid({
               type="button"
               onClick={() => onSelectDate(date)}
             >
-              {day}
+              <span>{day}</span>
+              {appointmentDates?.has(date) && <span className="calendar-day-marker" aria-label="Tiene citas" />}
             </button>
           );
         })}

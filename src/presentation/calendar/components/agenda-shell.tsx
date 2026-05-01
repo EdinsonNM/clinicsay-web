@@ -9,10 +9,10 @@ export function AgendaShell({
   sidebar: ReactNode;
   header: ReactNode;
   children: ReactNode;
-  panel: ReactNode;
+  panel?: ReactNode;
 }) {
   return (
-    <main className="agenda-shell">
+    <main className={panel ? 'agenda-shell' : 'agenda-shell agenda-shell-no-panel'}>
       {sidebar}
       <section className="agenda-main">
         {header}
