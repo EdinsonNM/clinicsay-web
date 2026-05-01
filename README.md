@@ -2,6 +2,16 @@
 
 Cliente React Vite del reto ClinicSay. Esta entrega es autocontenida para poder vivir como repositorio Git independiente y consume una API compatible mediante `VITE_API_BASE_URL`.
 
+## Vista previa
+
+Login administrativo (credenciales dummy por defecto `admin` / `admin`):
+
+![Pantalla de inicio de sesión ClinicSay Admin](./docs/screenshots/login-admin.png)
+
+Calendario mensual y agenda global del día seleccionado:
+
+![Calendario de citas y lista agenda global](./docs/screenshots/calendario-agenda.png)
+
 ## Requisitos
 
 - Node.js 22 o compatible
