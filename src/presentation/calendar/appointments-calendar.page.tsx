@@ -1,6 +1,11 @@
 import { ArrowLeft, CalendarCheck, ClipboardList, History } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useCallback, useMemo, useState } from 'react';
+import {
+  formatShortDateEs,
+  getMonthRange,
+  shiftIsoMonth,
+} from '../../core/date/date-utils';
 import type {
   AppointmentProjectionRequest,
   AppointmentQueryFilters,
@@ -108,13 +113,7 @@ export function AppointmentsCalendarPage() {
   );
 
   const navigateMonth = useCallback((delta: number) => {
-    const d = new Date(`${selectedDate}T12:00:00`);
-    d.setMonth(d.getMonth() + delta);
-    const y = d.getFullYear();
-    const m = d.getMonth();
-    const lastDay = new Date(y, m + 1, 0).getDate();
-    const prevDay = Math.min(Number(selectedDate.slice(8, 10)) || 1, lastDay);
-    setSelectedDate(`${y}-${String(m + 1).padStart(2, '0')}-${String(prevDay).padStart(2, '0')}`);
+    setSelectedDate(shiftIsoMonth(selectedDate, delta));
   }, [selectedDate]);
 
   const contextTitle = useMemo(() => {
@@ -125,8 +124,7 @@ export function AppointmentsCalendarPage() {
 
   const contextSubtitle = useMemo(() => {
     if (patientId) return 'Últimas visitas registradas';
-    const d = new Date(`${selectedDate}T12:00:00`);
-    return `Visión general del ${d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}`;
+    return `Visión general del ${formatShortDateEs(selectedDate)}`;
   }, [patientId, selectedDate]);
 
   const ContextIcon = useMemo(() => {
@@ -226,7 +224,7 @@ export function AppointmentsCalendarPage() {
             {patientId && doctorId ? (
               <AppointmentList
                 ContextIcon={CalendarCheck}
-                contextSubtitle={doctorReservationsSubtitle(selectedDate)}
+                contextSubtitle={`Reservas del ${formatShortDateEs(selectedDate)}`}
                 contextTitle="Reservas del médico"
                 document={doctorDayReservations.data}
                 isLoading={doctorDayReservations.isLoading}
@@ -256,10 +254,7 @@ export function AppointmentsCalendarPage() {
             </div>
             <AppointmentList
               ContextIcon={ClipboardList}
-              contextSubtitle={`Total de citas del ${new Date(`${selectedDate}T12:00:00`).toLocaleDateString('es-ES', {
-                day: '2-digit',
-                month: 'short',
-              })}`}
+              contextSubtitle={`Total de citas del ${formatShortDateEs(selectedDate)}`}
               contextTitle="Agenda global completa"
               document={selectedDayDocument}
               isLoading={calendar.isLoading}
@@ -299,28 +294,6 @@ export function AppointmentsCalendarPage() {
       </AnimatePresence>
     </AgendaShell>
   );
-}
-
-function getMonthRange(date: string) {
-  const value = new Date(`${date}T00:00:00`);
-  const year = value.getFullYear();
-  const month = value.getMonth();
-  const from = new Date(year, month, 1);
-  const to = new Date(year, month + 1, 0);
-
-  return {
-    from: formatDate(from),
-    to: formatDate(to),
-  };
-}
-
-function formatDate(date: Date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-}
-
-function doctorReservationsSubtitle(date: string) {
-  const value = new Date(`${date}T12:00:00`);
-  return `Reservas del ${value.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}`;
 }
 
 function getSelectedAppointmentDocument(

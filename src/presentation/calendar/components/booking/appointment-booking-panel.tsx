@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
+import { toAppointmentIsoDateTime } from '../../../../core/date/date-utils';
 import type { Doctor } from '../../../../domains/doctor/models/doctor.model';
 import type { Patient } from '../../../../domains/patient/models/patient.model';
 import type { Specialty } from '../../../../domains/specialty/models/specialty.model';
@@ -87,7 +88,7 @@ export function AppointmentBookingPanel({
     if (!canConfirm || !selectedDoctor || !selectedSpecialty) return;
 
     await create.mutateAsync({
-      date: new Date(`${selectedDate}T${selectedTime}:00`).toISOString(),
+      date: toAppointmentIsoDateTime(selectedDate, selectedTime),
       doctorId: selectedDoctor.id,
       specialtyId: selectedSpecialty.id,
       reason,

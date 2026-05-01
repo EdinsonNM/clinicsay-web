@@ -1,31 +1,14 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useMemo } from 'react';
+import {
+  buildIsoDate,
+  buildMonthCalendarCells,
+  formatMonthYearEs,
+  isTodayInMonth,
+  parseIsoDate,
+} from '../../../core/date/date-utils';
 
 const WEEKDAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-
-function parseSelected(iso: string): { year: number; month: number; day: number } {
-  const [ys = '2026', ms = '05', ds = '15'] = iso.split('-');
-  return {
-    year: Number(ys),
-    month: Number(ms),
-    day: Number(ds),
-  };
-}
-
-function buildCells(year: number, monthIndex: number): (number | null)[] {
-  const first = new Date(year, monthIndex, 1);
-  const startPad = first.getDay();
-  const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
-  const cells: (number | null)[] = [];
-  for (let i = 0; i < startPad; i++) cells.push(null);
-  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
-  while (cells.length % 7 !== 0) cells.push(null);
-  return cells;
-}
-
-function toIsoDate(year: number, month1: number, day: number) {
-  return `${year}-${String(month1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-}
 
 export function CalendarMonthGrid({
   appointmentDates,
@@ -40,23 +23,12 @@ export function CalendarMonthGrid({
   compact?: boolean;
   onNavigateMonth: (delta: number) => void;
 }) {
-  const { year, month, day: selectedDay } = parseSelected(selectedDate);
+  const { year, month, day: selectedDay } = parseIsoDate(selectedDate);
   const monthIndex = month - 1;
 
-  const cells = useMemo(() => buildCells(year, monthIndex), [year, monthIndex]);
+  const cells = useMemo(() => buildMonthCalendarCells(year, monthIndex), [year, monthIndex]);
 
-  const monthTitle = useMemo(
-    () =>
-      new Date(year, monthIndex, 1).toLocaleDateString('es-ES', {
-        month: 'long',
-        year: 'numeric',
-      }),
-    [year, monthIndex],
-  );
-
-  const today = new Date();
-  const isTodayDay = (d: number) =>
-    today.getFullYear() === year && today.getMonth() === monthIndex && today.getDate() === d;
+  const monthTitle = useMemo(() => formatMonthYearEs(year, monthIndex), [year, monthIndex]);
 
   return (
     <section
@@ -103,9 +75,9 @@ export function CalendarMonthGrid({
           if (cell === null) {
             return <div key={`empty-${i}`} className={compact ? 'h-9 sm:h-10' : 'h-12 sm:h-14'} aria-hidden />;
           }
-          const iso = toIsoDate(year, month, cell);
+          const iso = buildIsoDate(year, month, cell);
           const isSelected = selectedDay === cell;
-          const todayMarker = isTodayDay(cell);
+          const todayMarker = isTodayInMonth(year, monthIndex, cell);
           return (
             <button
               key={iso}

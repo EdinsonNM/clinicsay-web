@@ -1,3 +1,4 @@
+import { toLocalTimeSlot } from '../../../../core/date/date-utils';
 import type { AppointmentListDocument } from '../../../../domains/appointment/models/appointment.model';
 
 export function getBlockedTimeSlots(document?: AppointmentListDocument) {
@@ -7,13 +8,6 @@ export function getBlockedTimeSlots(document?: AppointmentListDocument) {
       .map((appointment) => toLocalTimeSlot(String(appointment.attributes.date ?? '')))
       .filter(Boolean),
   );
-}
-
-function toLocalTimeSlot(value: string) {
-  if (!value) return '';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '';
-  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 }
 
 function isBlockingStatus(status: string) {

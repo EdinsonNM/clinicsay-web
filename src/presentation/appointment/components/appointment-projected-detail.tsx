@@ -1,3 +1,4 @@
+import { formatDateTimePe } from '../../../core/date/date-utils';
 import type { AppointmentDocument, IncludedResource } from '../../../domains/appointment/models/appointment.model';
 
 export function AppointmentProjectedDetail({ document }: { document: AppointmentDocument }) {
@@ -12,7 +13,7 @@ export function AppointmentProjectedDetail({ document }: { document: Appointment
       <div className="rounded-3xl bg-[#f0f7f8] p-5">
         <p className="mb-2 text-[10px] font-black tracking-wider text-slate-500 uppercase">Cita</p>
         <h3 className="mb-3 text-base font-black text-slate-800">
-          {date ? new Date(date).toLocaleString('es-PE') : 'Fecha no disponible'}
+          {formatDateTimePe(date) || 'Fecha no disponible'}
         </h3>
         <span className="inline-flex rounded-full bg-[#dff7f5] px-3 py-1 text-[10px] font-bold text-teal-800">
           {String(attributes.status ?? 'Estado no disponible')}

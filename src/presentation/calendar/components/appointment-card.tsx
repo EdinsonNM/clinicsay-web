@@ -1,5 +1,6 @@
 import { AlignLeft, MoreHorizontal, Stethoscope, UserRound } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { formatTimePe } from '../../../core/date/date-utils';
 import type {
   AppointmentResource,
   IncludedResource,
@@ -30,12 +31,7 @@ export function AppointmentCard({
     specialtyRelationship?.data?.id,
   );
   const date = String(appointment.attributes.date ?? '');
-  const time = date
-    ? new Date(date).toLocaleTimeString('es-PE', {
-        hour: '2-digit',
-        minute: '2-digit',
-      })
-    : '--:--';
+  const time = formatTimePe(date) || '--:--';
   const contact = patient
     ? [patient.attributes.email, patient.attributes.phone, patient.attributes.address]
         .filter(Boolean)

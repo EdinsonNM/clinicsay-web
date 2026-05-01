@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
+import { dateTimeLocalToIso } from '../../../core/date/date-utils';
 import { useDoctorsGetBySpecialty } from '../../../infra/doctor/hooks/use-doctors-get-by-specialty';
 import { usePatientsSearch } from '../../../infra/patient/hooks/use-patients-search';
 import { useSpecialtiesGetAll } from '../../../infra/specialty/hooks/use-specialties-get-all';
@@ -30,7 +31,7 @@ export function AppointmentCreateForm() {
   async function submit(event: FormEvent) {
     event.preventDefault();
     await create.mutateAsync({
-      date: new Date(date).toISOString(),
+      date: dateTimeLocalToIso(date),
       doctorId,
       specialtyId,
       reason,
