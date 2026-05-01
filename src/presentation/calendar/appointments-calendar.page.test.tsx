@@ -6,16 +6,17 @@ import { AppointmentsCalendarPage } from './appointments-calendar.page';
 describe('AppointmentsCalendarPage', () => {
   it('renders the projected agenda experience', () => {
     render(<AppProviders><AppointmentsCalendarPage /></AppProviders>);
-    expect(screen.getByText('Agenda medica')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /ClinicSay/i })).toBeInTheDocument();
     expect(screen.getByLabelText('Calendario mensual')).toBeInTheDocument();
     expect(screen.queryByLabelText('Peticion generada')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Nueva cita')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Abrir panel de reserva')).toBeInTheDocument();
   });
 
   it('opens the appointment booking flow from the agenda', () => {
     render(<AppProviders><AppointmentsCalendarPage /></AppProviders>);
 
-    fireEvent.click(screen.getByRole('button', { name: /nueva cita/i }));
+    fireEvent.click(screen.getByLabelText('Nueva cita (barra superior)'));
 
     expect(screen.getByLabelText('Nueva cita')).toBeInTheDocument();
     expect(screen.getByText('Paciente')).toBeInTheDocument();

@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { CalendarCheck, ClipboardList, History } from 'lucide-react';
+import { useCallback, useMemo, useState } from 'react';
 import type {
   AppointmentProjectionRequest,
   AppointmentQueryFilters,
@@ -68,10 +69,40 @@ export function AppointmentsCalendarPage() {
     [calendar.data],
   );
 
+  const navigateMonth = useCallback((delta: number) => {
+    const d = new Date(`${selectedDate}T12:00:00`);
+    d.setMonth(d.getMonth() + delta);
+    const y = d.getFullYear();
+    const m = d.getMonth();
+    const lastDay = new Date(y, m + 1, 0).getDate();
+    const prevDay = Math.min(Number(selectedDate.slice(8, 10)) || 1, lastDay);
+    setSelectedDate(`${y}-${String(m + 1).padStart(2, '0')}-${String(prevDay).padStart(2, '0')}`);
+  }, [selectedDate]);
+
+  const contextTitle = useMemo(() => {
+    if (patientId) return 'Historial del paciente';
+    if (doctorId) return 'Agenda del médico';
+    return 'Agenda Global';
+  }, [doctorId, patientId]);
+
+  const contextSubtitle = useMemo(() => {
+    const d = new Date(`${selectedDate}T12:00:00`);
+    return `Visión general del ${d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}`;
+  }, [selectedDate]);
+
+  const ContextIcon = useMemo(() => {
+    if (patientId) return History;
+    if (doctorId) return CalendarCheck;
+    return ClipboardList;
+  }, [doctorId, patientId]);
+
   return (
     <AgendaShell
+      mobileBookingOpen={isBookingOpen}
+      onMobileToggleBooking={() => setIsBookingOpen((open) => !open)}
       header={
         <AgendaHeader
+          isBookingOpen={isBookingOpen}
           onNew={() => {
             setSelectedId(undefined);
             setIsBookingOpen(true);
@@ -94,19 +125,26 @@ export function AppointmentsCalendarPage() {
     >
       <CalendarMonthGrid
         appointmentDates={appointmentDates}
+        compact={isBookingOpen}
         selectedDate={selectedDate}
+        onNavigateMonth={navigateMonth}
         onSelectDate={(date) => {
           setSelectedDate(date);
         }}
       />
-      {calendar.error && (
-        <StatusMessage kind="alert" message={calendar.error.message} />
-      )}
+      {calendar.error ? (
+        <div className="mb-6">
+          <StatusMessage kind="alert" message={calendar.error.message} />
+        </div>
+      ) : null}
       <AppointmentList
+        ContextIcon={ContextIcon}
+        contextSubtitle={contextSubtitle}
+        contextTitle={contextTitle}
         document={selectedDayDocument}
         isLoading={calendar.isLoading}
-        onSelect={setSelectedId}
         showContact={false}
+        onSelect={setSelectedId}
       />
       <AppointmentDetailPanel appointmentId={selectedId} />
     </AgendaShell>

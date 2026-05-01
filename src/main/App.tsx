@@ -8,13 +8,14 @@ export default function App() {
 
   return (
     <AppProviders>
-      <div className="app-shell">
-        <header className="topbar">
-          <strong>ClinicSay</strong>
-          {session && <span>{session.user.name}</span>}
-        </header>
+      {session ? (
+        <div className="app-shell">
+          
+          <AppRouter session={session} onLogin={setSession} />
+        </div>
+      ) : (
         <AppRouter session={session} onLogin={setSession} />
-      </div>
+      )}
     </AppProviders>
   );
 }

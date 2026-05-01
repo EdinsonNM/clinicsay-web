@@ -6,6 +6,8 @@ import { AppointmentDetailPanel } from './appointment-detail-panel';
 describe('AppointmentDetailPanel', () => {
   it('prompts for appointment selection', () => {
     render(<AppProviders><AppointmentDetailPanel /></AppProviders>);
-    expect(screen.getByText('Seleccione una cita para ver el detalle.')).toBeInTheDocument();
+    expect(
+      screen.getByText(/Selecciona una cita para ver el detalle y la proyección/i),
+    ).toBeInTheDocument();
   });
 });

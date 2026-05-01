@@ -6,6 +6,6 @@ import { LoginPage } from './login.page';
 describe('LoginPage', () => {
   it('renders admin login form', () => {
     render(<AppProviders><LoginPage onLogin={() => undefined} /></AppProviders>);
-    expect(screen.getByText('ClinicSay Admin')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Bienvenido de nuevo/i })).toBeInTheDocument();
   });
 });
