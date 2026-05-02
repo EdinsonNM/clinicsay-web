@@ -8,8 +8,14 @@ export type SessionContextValue = {
 
 const SessionContext = createContext<SessionContextValue | null>(null);
 
-export function SessionProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<AdminSession | undefined>();
+export function SessionProvider({
+  children,
+  initialSession,
+}: {
+  children: ReactNode;
+  initialSession?: AdminSession;
+}) {
+  const [session, setSession] = useState<AdminSession | undefined>(initialSession);
   const value = useMemo(() => ({ session, setSession }), [session]);
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }

@@ -54,10 +54,10 @@ export function DoctorsDirectoryMain({
 }) {
   const listContainerClassName =
     selectedDoctorId === null
-      ? 'grid w-full grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3'
+      ? 'grid w-full grid-cols-1 gap-4 px-2 py-1 sm:grid-cols-2 sm:px-0 sm:py-0 xl:grid-cols-3'
       : editingInDetailContext
         ? 'hidden'
-        : 'hidden w-full shrink-0 space-y-4 lg:block lg:w-[300px] xl:w-[340px]';
+        : 'doctor-directory-scroll hidden w-full shrink-0 space-y-4 lg:block lg:w-[332px] xl:w-[372px] lg:max-h-[calc(100dvh-11rem)] lg:min-h-0 lg:self-start lg:overflow-y-auto lg:overscroll-y-contain lg:px-4 lg:py-2';
 
   const rootClassName =
     selectedDoctorId !== null
