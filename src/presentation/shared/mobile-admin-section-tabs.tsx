@@ -1,12 +1,18 @@
+import { useLocation, useNavigate } from 'react-router-dom';
+import { APP_ROUTES } from '../../core/navigation/app-routes';
 import type { AdminNavSection } from './admin-nav.types';
 
-export function MobileAdminSectionTabs({
-  active,
-  onNavigate,
-}: {
-  active: AdminNavSection;
-  onNavigate: (section: AdminNavSection) => void;
-}) {
+export function MobileAdminSectionTabs() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const active: AdminNavSection = location.pathname.startsWith(APP_ROUTES.doctors)
+    ? 'doctors'
+    : 'agenda';
+
+  function go(section: AdminNavSection) {
+    navigate(section === 'agenda' ? APP_ROUTES.agenda : APP_ROUTES.doctors);
+  }
+
   return (
     <nav
       aria-label="Secciones"
@@ -14,7 +20,7 @@ export function MobileAdminSectionTabs({
     >
       <button
         type="button"
-        onClick={() => onNavigate('agenda')}
+        onClick={() => go('agenda')}
         className={`flex-1 rounded-2xl py-3 text-[11px] font-black tracking-[0.15em] text-white uppercase transition-all ${
           active === 'agenda'
             ? 'bg-[#76a5af] shadow-[0_10px_28px_rgba(118,165,175,0.35)]'
@@ -25,7 +31,7 @@ export function MobileAdminSectionTabs({
       </button>
       <button
         type="button"
-        onClick={() => onNavigate('doctors')}
+        onClick={() => go('doctors')}
         className={`flex-1 rounded-2xl py-3 text-[11px] font-black tracking-[0.15em] text-white uppercase transition-all ${
           active === 'doctors'
             ? 'bg-[#76a5af] shadow-[0_10px_28px_rgba(118,165,175,0.35)]'

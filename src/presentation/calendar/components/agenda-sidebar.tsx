@@ -7,6 +7,8 @@ import {
   Stethoscope,
   Users,
 } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { APP_ROUTES } from '../../../core/navigation/app-routes';
 import type { AdminNavSection } from '../../shared/admin-nav.types';
 
 type NavItem = {
@@ -23,13 +25,17 @@ const items: NavItem[] = [
   { icon: Settings, label: 'Ajustes' },
 ];
 
-export function AgendaSidebar({
-  activeSection,
-  onNavigate,
-}: {
-  activeSection: AdminNavSection;
-  onNavigate: (section: AdminNavSection) => void;
-}) {
+export function AgendaSidebar() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const activeSection: AdminNavSection = location.pathname.startsWith(APP_ROUTES.doctors)
+    ? 'doctors'
+    : 'agenda';
+
+  function go(section: AdminNavSection) {
+    navigate(section === 'agenda' ? APP_ROUTES.agenda : APP_ROUTES.doctors);
+  }
+
   return (
     <aside
       className="hidden w-24 shrink-0 flex-col items-center gap-8 border-r border-slate-100 bg-white py-10 lg:flex"
@@ -51,7 +57,7 @@ export function AgendaSidebar({
               aria-label={label}
               aria-current={isActive ? 'page' : undefined}
               disabled={!isClickable}
-              onClick={() => section && onNavigate(section)}
+              onClick={() => section && go(section)}
               className={`rounded-2xl p-3.5 transition-all ${
                 isActive
                   ? 'bg-teal-50 text-teal-600 shadow-sm'

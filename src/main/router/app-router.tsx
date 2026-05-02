@@ -1,32 +1,57 @@
-import { useState } from 'react';
-import { LoginPage } from '../../presentation/auth/login.page';
-import { AppointmentsCalendarPage } from '../../presentation/calendar/appointments-calendar.page';
-import { AgendaSidebar } from '../../presentation/calendar/components/agenda-sidebar';
-import { DoctorsManagementPage } from '../../presentation/doctor/doctors-management.page';
-import type { AdminNavSection } from '../../presentation/shared/admin-nav.types';
-import { MobileAdminSectionTabs } from '../../presentation/shared/mobile-admin-section-tabs';
+import { lazy, Suspense } from 'react';
+import { Navigate, Outlet, Route, Routes, useNavigate } from 'react-router-dom';
+import { APP_ROUTES } from '../../core/navigation/app-routes';
 import { useSession } from '../providers/session.provider';
+import { AdminShell, AgendaRoute, DoctorsRoute } from './admin-shell';
+import { RouteFallback } from './route-fallback';
 
-export function AppRouter() {
-  const { session, setSession } = useSession();
-  if (!session) return <LoginPage onLogin={setSession} />;
-  return <AdminApp />;
+const LoginPage = lazy(() =>
+  import('../../presentation/auth/login.page').then((m) => ({ default: m.LoginPage })),
+);
+
+function RootRedirect() {
+  const { session } = useSession();
+  return <Navigate to={session ? APP_ROUTES.agenda : APP_ROUTES.login} replace />;
 }
 
-function AdminApp() {
-  const [section, setSection] = useState<AdminNavSection>('agenda');
-  const sidebar = <AgendaSidebar activeSection={section} onNavigate={setSection} />;
+function RequireAuth() {
+  const { session } = useSession();
+  if (!session) return <Navigate to={APP_ROUTES.login} replace />;
+  return <Outlet />;
+}
+
+function LoginRoute() {
+  const { session, setSession } = useSession();
+  const navigate = useNavigate();
+
+  if (session) {
+    return <Navigate to={APP_ROUTES.agenda} replace />;
+  }
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-[#F0F7F8]">
-      <MobileAdminSectionTabs active={section} onNavigate={setSection} />
-      <div className="min-h-0 flex-1 overflow-hidden">
-        {section === 'agenda' ? (
-          <AppointmentsCalendarPage sidebar={sidebar} />
-        ) : (
-          <DoctorsManagementPage sidebar={sidebar} />
-        )}
-      </div>
-    </div>
+    <Suspense fallback={<RouteFallback />}>
+      <LoginPage
+        onLogin={(s) => {
+          setSession(s);
+          navigate(APP_ROUTES.agenda, { replace: true });
+        }}
+      />
+    </Suspense>
+  );
+}
+
+export function AppRouter() {
+  return (
+    <Routes>
+      <Route path="/" element={<RootRedirect />} />
+      <Route path={APP_ROUTES.login} element={<LoginRoute />} />
+      <Route element={<RequireAuth />}>
+        <Route element={<AdminShell />}>
+          <Route path={APP_ROUTES.agenda} element={<AgendaRoute />} />
+          <Route path={APP_ROUTES.doctors} element={<DoctorsRoute />} />
+        </Route>
+      </Route>
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }

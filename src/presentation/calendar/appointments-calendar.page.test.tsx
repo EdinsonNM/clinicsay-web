@@ -1,10 +1,19 @@
 import { fireEvent, render, screen } from '@testing-library/react';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
+import { APP_ROUTES } from '../../core/navigation/app-routes';
 import { AppProviders } from '../../main/providers/app-providers';
 import { AgendaSidebar } from './components/agenda-sidebar';
 import { AppointmentsCalendarPage } from './appointments-calendar.page';
 
-const testSidebar = <AgendaSidebar activeSection="agenda" onNavigate={() => {}} />;
+const testSidebar = (
+  <MemoryRouter initialEntries={[APP_ROUTES.agenda]}>
+    <Routes>
+      <Route path={APP_ROUTES.agenda} element={<AgendaSidebar />} />
+      <Route path={APP_ROUTES.doctors} element={<AgendaSidebar />} />
+    </Routes>
+  </MemoryRouter>
+);
 
 describe('AppointmentsCalendarPage', () => {
   it('renders the projected agenda experience', () => {

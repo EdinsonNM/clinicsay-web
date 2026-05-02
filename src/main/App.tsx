@@ -1,3 +1,4 @@
+import { BrowserRouter } from 'react-router-dom';
 import { AppProviders } from './providers/app-providers';
 import { useSession } from './providers/session.provider';
 import { AppRouter } from './router/app-router';
@@ -5,7 +6,9 @@ import { AppRouter } from './router/app-router';
 export default function App() {
   return (
     <AppProviders>
-      <SessionLayout />
+      <BrowserRouter>
+        <SessionLayout />
+      </BrowserRouter>
     </AppProviders>
   );
 }

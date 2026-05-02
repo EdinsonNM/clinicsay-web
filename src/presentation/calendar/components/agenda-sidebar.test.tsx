@@ -1,16 +1,24 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { createMemoryRouter, RouterProvider } from 'react-router-dom';
+import { describe, expect, it } from 'vitest';
+import { APP_ROUTES } from '../../../core/navigation/app-routes';
 import { AgendaSidebar } from './agenda-sidebar';
 
 describe('AgendaSidebar', () => {
-  it('notifica navegación al pulsar Agenda o Médicos', () => {
-    const onNavigate = vi.fn();
-    render(<AgendaSidebar activeSection="doctors" onNavigate={onNavigate} />);
+  it('navega a Agenda y Médicos', () => {
+    const router = createMemoryRouter(
+      [
+        { path: APP_ROUTES.agenda, element: <AgendaSidebar /> },
+        { path: APP_ROUTES.doctors, element: <AgendaSidebar /> },
+      ],
+      { initialEntries: [APP_ROUTES.doctors] },
+    );
+    render(<RouterProvider router={router} />);
 
-    fireEvent.click(screen.getByRole('button', { name: /agenda/i, hidden: true }));
-    expect(onNavigate).toHaveBeenCalledWith('agenda');
+    fireEvent.click(screen.getByRole('button', { name: /agenda/i }));
+    expect(router.state.location.pathname).toBe(APP_ROUTES.agenda);
 
-    fireEvent.click(screen.getByRole('button', { name: /médicos/i, hidden: true }));
-    expect(onNavigate).toHaveBeenCalledWith('doctors');
+    fireEvent.click(screen.getByRole('button', { name: /médicos/i }));
+    expect(router.state.location.pathname).toBe(APP_ROUTES.doctors);
   });
 });
