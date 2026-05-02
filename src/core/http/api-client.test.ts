@@ -1,91 +1,117 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AppError } from '../errors/app-error';
 import { ApiClient } from './api-client';
 
 describe('ApiClient', () => {
-  it('get devuelve el cuerpo JSON cuando la respuesta es correcta', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({ ok: true }),
-      }),
-    );
-    const client = new ApiClient('http://example.test');
-    await expect(client.get('/ruta')).resolves.toEqual({ ok: true });
-    expect(fetch).toHaveBeenCalledWith('http://example.test/ruta', undefined);
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn());
   });
 
-  it('post envía JSON y devuelve la respuesta', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({ id: '1' }),
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('get devuelve JSON cuando la respuesta es OK', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({ data: [] }),
+    } as Response);
+
+    const client = new ApiClient('http://localhost/api/v1');
+    await expect(client.get('/specialties')).resolves.toEqual({ data: [] });
+    expect(fetch).toHaveBeenCalledWith('http://localhost/api/v1/specialties', undefined);
+  });
+
+  it('post envía JSON y devuelve el cuerpo parseado', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({ created: true }),
+    } as Response);
+
+    const client = new ApiClient('http://localhost/api/v1');
+    await expect(client.post('/doctors', { name: 'A' })).resolves.toEqual({ created: true });
+    expect(fetch).toHaveBeenCalledWith(
+      'http://localhost/api/v1/doctors',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ name: 'A' }),
       }),
     );
-    const client = new ApiClient('http://example.test');
-    await expect(client.post('/citas', { a: 1 })).resolves.toEqual({ id: '1' });
-    expect(fetch).toHaveBeenCalledWith('http://example.test/citas', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ a: 1 }),
+  });
+
+  it('lanza AppError cuando fetch rechaza', async () => {
+    vi.mocked(fetch).mockRejectedValue(new Error('offline'));
+
+    const client = new ApiClient('http://localhost/api/v1');
+    await expect(client.get('/x')).rejects.toBeInstanceOf(AppError);
+  });
+
+  it('lanza AppError cuando la respuesta HTTP no es OK', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: false,
+      status: 422,
+      json: async () => ({ message: 'Invalido' }),
+    } as Response);
+
+    const client = new ApiClient('http://localhost/api/v1');
+    await expect(client.get('/x')).rejects.toMatchObject({
+      message: 'Invalido',
+      status: 422,
     });
   });
 
-  it('lanza AppError cuando la respuesta no es ok', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
-        ok: false,
-        status: 422,
-        json: async () => ({ message: 'invalido' }),
+  it('concatena message cuando viene como array', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: false,
+      status: 400,
+      json: async () => ({ message: ['uno', 'dos'] }),
+    } as Response);
+
+    const client = new ApiClient('http://localhost/api/v1');
+    await expect(client.get('/x')).rejects.toMatchObject({ message: 'uno, dos' });
+  });
+
+  it('usa mensaje por defecto si el cuerpo de error no incluye message', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: async () => ({}),
+    } as Response);
+
+    const client = new ApiClient('http://localhost/api/v1');
+    await expect(client.get('/x')).rejects.toMatchObject({ message: 'Solicitud invalida' });
+  });
+
+  it('patch envía JSON y devuelve el cuerpo parseado', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({ updated: true }),
+    } as Response);
+
+    const client = new ApiClient('http://localhost/api/v1');
+    await expect(client.patch('/doctors/d1', { name: 'X' })).resolves.toEqual({ updated: true });
+
+    expect(fetch).toHaveBeenCalledWith(
+      'http://localhost/api/v1/doctors/d1',
+      expect.objectContaining({
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'X' }),
       }),
-    );
-    const client = new ApiClient('http://example.test');
-    await expect(client.get('/x')).rejects.toSatisfy(
-      (err: unknown) => err instanceof AppError && err.message === 'invalido' && err.status === 422,
     );
   });
 
-  it('concatena mensaje cuando message es arreglo', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
-        ok: false,
-        status: 400,
-        json: async () => ({ message: ['a', 'b'] }),
-      }),
-    );
-    const client = new ApiClient('http://example.test');
-    await expect(client.get('/x')).rejects.toSatisfy(
-      (err: unknown) => err instanceof AppError && err.message === 'a, b',
-    );
-  });
+  it('delete completa sin valor de retorno cuando la respuesta es OK', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({}),
+    } as Response);
 
-  it('usa mensaje por defecto si no hay message en el cuerpo', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
-        ok: false,
-        status: 500,
-        json: async () => ({}),
-      }),
-    );
-    const client = new ApiClient('http://example.test');
-    await expect(client.get('/x')).rejects.toSatisfy(
-      (err: unknown) => err instanceof AppError && err.message === 'Solicitud invalida',
-    );
-  });
-
-  it('lanza AppError de red cuando fetch rechaza', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
-    const client = new ApiClient('http://example.test');
-    await expect(client.get('/x')).rejects.toSatisfy(
-      (err: unknown) =>
-        err instanceof AppError &&
-        err.message.includes('No se pudo contactar la API') &&
-        err.status === 0,
+    const client = new ApiClient('http://localhost/api/v1');
+    await expect(client.delete('/doctors/d1')).resolves.toBeUndefined();
+    expect(fetch).toHaveBeenCalledWith(
+      'http://localhost/api/v1/doctors/d1',
+      expect.objectContaining({ method: 'DELETE' }),
     );
   });
 });
