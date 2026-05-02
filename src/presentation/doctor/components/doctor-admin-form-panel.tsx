@@ -13,6 +13,7 @@ export function DoctorAdminFormPanel({
   onSubmitValues,
   isPending,
   serverError,
+  layout = 'shell',
 }: {
   specialties: Specialty[];
   editingDoctor: Doctor | null;
@@ -20,6 +21,8 @@ export function DoctorAdminFormPanel({
   onSubmitValues: (values: DoctorFormInput) => Promise<void>;
   isPending: boolean;
   serverError?: string;
+  /** `embedded`: tercera columna junto al detalle; `shell`: panel lateral del AgendaShell. */
+  layout?: 'shell' | 'embedded';
 }) {
   const {
     register,
@@ -58,9 +61,14 @@ export function DoctorAdminFormPanel({
     setValue('specialtyIds', next, { shouldValidate: true, shouldDirty: true });
   }
 
+  const shellAsideClass =
+    'flex h-full flex-col overflow-hidden rounded-l-[2rem] border-l border-slate-100/80 bg-white p-8 shadow-[0_10px_40px_rgba(0,0,0,0.06)] lg:rounded-none lg:p-10';
+  const embeddedClass =
+    'flex max-h-[min(720px,calc(100vh-14rem))] min-h-0 flex-col overflow-hidden rounded-[1.35rem] border border-slate-100 bg-white p-6 shadow-[0_10px_40px_rgba(0,0,0,0.06)] sm:p-8';
+
   return (
     <aside
-      className="flex h-full flex-col overflow-hidden rounded-l-[2rem] border-l border-slate-100/80 bg-white p-8 shadow-[0_10px_40px_rgba(0,0,0,0.06)] lg:rounded-none lg:p-10"
+      className={layout === 'embedded' ? embeddedClass : shellAsideClass}
       aria-label={editingDoctor ? 'Editar médico' : 'Nuevo médico'}
     >
       <div className="mb-8 flex shrink-0 items-center justify-between gap-4">

@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useDoctorsList } from '../../infra/doctor/hooks/use-doctors-list';
+import { useSpecialtiesGetAll } from '../../infra/specialty/hooks/use-specialties-get-all';
 import { QueryClientAppProvider } from '../../main/providers/query-client.provider';
 import { DoctorsManagementPage } from './doctors-management.page';
 
@@ -46,6 +47,22 @@ vi.mock('../../infra/doctor/hooks/use-doctor-delete', () => ({
   })),
 }));
 
+vi.mock('../../infra/doctor/hooks/use-doctor-detail', () => ({
+  useDoctorDetail: vi.fn(() => ({
+    data: undefined,
+    isLoading: false,
+    error: null,
+  })),
+}));
+
+vi.mock('../../infra/appointment/hooks/use-appointments-calendar', () => ({
+  useAppointmentsCalendar: vi.fn(() => ({
+    data: undefined,
+    isLoading: false,
+    error: null,
+  })),
+}));
+
 function Providers({ children }: { children: ReactNode }) {
   return <QueryClientAppProvider>{children}</QueryClientAppProvider>;
 }
@@ -85,6 +102,64 @@ describe('DoctorsManagementPage', () => {
 
     expect(screen.getByText('Dr. Luna')).toBeInTheDocument();
     expect(screen.getByText(/Medicina general/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Dr\. Luna.*CMP.*CMP1/i)).toBeInTheDocument();
+  });
+
+  it('en la tarjeta compacta muestra la primera especialidad y +1 si hay dos', () => {
+    vi.mocked(useSpecialtiesGetAll).mockReturnValue({
+      data: {
+        data: [
+          { id: 's1', name: 'Dermatología' },
+          { id: 's2', name: 'Pediatría' },
+        ],
+      },
+    } as never);
+
+    vi.mocked(useDoctorsList).mockReturnValue({
+      data: [{ id: 'd1', name: 'Dra. García', cmp: 'CMP001', specialtyIds: ['s1', 's2'] }],
+      isLoading: false,
+      error: null,
+    } as never);
+
+    render(
+      <Providers>
+        <DoctorsManagementPage sidebar={<aside aria-label="sidebar test" />} />
+      </Providers>,
+    );
+
+    const card = screen.getByText('Dra. García').closest('article');
+    expect(card).toBeTruthy();
+    expect(card).toHaveTextContent(/Dermatología/);
+    expect(card).toHaveTextContent('+1');
+    expect(screen.getByLabelText(/Dermatología.*Pediatría/i)).toBeInTheDocument();
+  });
+
+  it('en la tarjeta compacta muestra 3+ si hay tres o más especialidades', () => {
+    vi.mocked(useSpecialtiesGetAll).mockReturnValue({
+      data: {
+        data: [
+          { id: 's1', name: 'Cardiología' },
+          { id: 's2', name: 'Dermatología' },
+          { id: 's3', name: 'Pediatría' },
+        ],
+      },
+    } as never);
+
+    vi.mocked(useDoctorsList).mockReturnValue({
+      data: [{ id: 'd1', name: 'Dr. Multi', cmp: 'CMP9', specialtyIds: ['s1', 's2', 's3'] }],
+      isLoading: false,
+      error: null,
+    } as never);
+
+    render(
+      <Providers>
+        <DoctorsManagementPage sidebar={<aside aria-label="sidebar test" />} />
+      </Providers>,
+    );
+
+    const card = screen.getByText('Dr. Multi').closest('article');
+    expect(card).toHaveTextContent(/Cardiología/);
+    expect(card).toHaveTextContent('3+');
   });
 
   it('muestra error de carga', () => {

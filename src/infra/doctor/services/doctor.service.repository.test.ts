@@ -25,7 +25,7 @@ describe('DoctorServiceRepository', () => {
     });
     const repo = new DoctorServiceRepository();
     const rows = await repo.list();
-    expect(apiClient.get).toHaveBeenCalledWith('/doctors');
+    expect(apiClient.get).toHaveBeenCalledWith('/doctors?include=specialties');
     expect(rows).toHaveLength(1);
     expect(rows[0].specialtyIds).toEqual(['s1']);
   });
@@ -34,7 +34,7 @@ describe('DoctorServiceRepository', () => {
     vi.mocked(apiClient.get).mockResolvedValue({ data: [] });
     const repo = new DoctorServiceRepository();
     await repo.list({ specialtyId: 's-1' });
-    expect(apiClient.get).toHaveBeenCalledWith('/doctors?specialtyId=s-1');
+    expect(apiClient.get).toHaveBeenCalledWith('/doctors?include=specialties&specialtyId=s-1');
   });
 
   it('create hace POST /doctors', async () => {
@@ -69,5 +69,23 @@ describe('DoctorServiceRepository', () => {
     const repo = new DoctorServiceRepository();
     await repo.delete('d1');
     expect(apiClient.delete).toHaveBeenCalledWith('/doctors/d1');
+  });
+
+  it('detail hace GET /doctors/:id', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({
+      data: {
+        id: 'd1',
+        name: 'Dr. X',
+        cmp: 'c',
+        specialtyIds: ['s1'],
+        email: 'x@clinic.test',
+        phone: '+51 999',
+      },
+    });
+    const repo = new DoctorServiceRepository();
+    const row = await repo.detail('d1');
+    expect(apiClient.get).toHaveBeenCalledWith('/doctors/d1');
+    expect(row.email).toBe('x@clinic.test');
+    expect(row.phone).toBe('+51 999');
   });
 });

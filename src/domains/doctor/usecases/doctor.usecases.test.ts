@@ -3,6 +3,7 @@ import type { CreateDoctorDto } from '../dto/doctor.dto';
 import type { DoctorRepository } from '../repositories/doctor.repository';
 import { CreateDoctorUseCase } from './create-doctor.usecase';
 import { DeleteDoctorUseCase } from './delete-doctor.usecase';
+import { GetDoctorDetailUseCase } from './get-doctor-detail.usecase';
 import { ListDoctorsUseCase } from './list-doctors.usecase';
 import { UpdateDoctorUseCase } from './update-doctor.usecase';
 
@@ -38,5 +39,13 @@ describe('Doctor use cases', () => {
     const useCase = new DeleteDoctorUseCase(repository);
     await expect(useCase.execute('d1')).resolves.toBeUndefined();
     expect(deleteFn).toHaveBeenCalledWith('d1');
+  });
+
+  it('GetDoctorDetailUseCase delega detail', async () => {
+    const detail = vi.fn().mockResolvedValue({ id: 'd1', name: 'A', cmp: 'c', specialtyIds: [] });
+    const repository = { detail } as unknown as DoctorRepository;
+    const useCase = new GetDoctorDetailUseCase(repository);
+    await expect(useCase.execute('d1')).resolves.toMatchObject({ id: 'd1' });
+    expect(detail).toHaveBeenCalledWith('d1');
   });
 });
