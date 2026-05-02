@@ -6,6 +6,7 @@ import {
   getMonthRange,
   shiftIsoMonth,
 } from '../../core/date/date-utils';
+import type { ReactNode } from 'react';
 import type {
   AppointmentProjectionRequest,
   AppointmentQueryFilters,
@@ -15,12 +16,12 @@ import { useAppointmentsCalendar } from '../../infra/appointment/hooks/use-appoi
 import { useSpecialtiesGetAll } from '../../infra/specialty/hooks/use-specialties-get-all';
 import { AppointmentDetailPanel } from '../appointment/components/appointment-detail-panel';
 import { StatusMessage } from '../shared/status-message';
-import { AgendaHeader, AgendaShell, AgendaSidebar } from './components/agenda-shell';
+import { AgendaHeader, AgendaShell } from './components/agenda-shell';
 import { AppointmentContextPanel } from './components/appointment-context-panel';
 import { AppointmentList } from './components/appointment-list';
 import { CalendarMonthGrid } from './components/calendar-month-grid';
 
-export function AppointmentsCalendarPage() {
+export function AppointmentsCalendarPage({ sidebar }: { sidebar: ReactNode }) {
   const [selectedDate, setSelectedDate] = useState('2026-05-15');
   const [doctorId, setDoctorId] = useState('');
   const [patientId, setPatientId] = useState('');
@@ -179,7 +180,7 @@ export function AppointmentsCalendarPage() {
           />
         ) : null
       }
-      sidebar={<AgendaSidebar />}
+      sidebar={sidebar}
     >
       <AnimatePresence mode="wait" initial={false}>
         {!selectedId && !isAgendaExpanded ? (

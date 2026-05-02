@@ -2,44 +2,68 @@ import type { LucideIcon } from 'lucide-react';
 import {
   Activity,
   Calendar as CalendarIcon,
-  History,
   LayoutDashboard,
   Settings,
+  Stethoscope,
   Users,
 } from 'lucide-react';
+import type { AdminNavSection } from '../../shared/admin-nav.types';
 
-export function AgendaSidebar() {
-  const items: { icon: LucideIcon; label: string; active?: boolean }[] = [
-    { icon: LayoutDashboard, label: 'Panel' },
-    { icon: CalendarIcon, label: 'Agenda', active: true },
-    { icon: Users, label: 'Pacientes' },
-    { icon: History, label: 'Historial' },
-    { icon: Settings, label: 'Ajustes' },
-  ];
+type NavItem = {
+  icon: LucideIcon;
+  label: string;
+  section?: AdminNavSection;
+};
 
+const items: NavItem[] = [
+  { icon: LayoutDashboard, label: 'Panel' },
+  { icon: CalendarIcon, label: 'Agenda', section: 'agenda' },
+  { icon: Stethoscope, label: 'Médicos', section: 'doctors' },
+  { icon: Users, label: 'Pacientes' },
+  { icon: Settings, label: 'Ajustes' },
+];
+
+export function AgendaSidebar({
+  activeSection,
+  onNavigate,
+}: {
+  activeSection: AdminNavSection;
+  onNavigate: (section: AdminNavSection) => void;
+}) {
   return (
     <aside
       className="hidden w-24 shrink-0 flex-col items-center gap-8 border-r border-slate-100 bg-white py-10 lg:flex"
-      aria-label="Navegación de agenda"
+      aria-label="Navegación principal"
     >
       <div className="mb-4 flex h-12 w-12 cursor-pointer items-center justify-center rounded-2xl bg-[#3ABFB4] text-white shadow-lg shadow-teal-500/20 transition-transform hover:scale-105">
         <Activity className="h-7 w-7" aria-hidden />
       </div>
       <nav className="flex flex-col gap-5" aria-label="Secciones">
-        {items.map(({ icon: Icon, label, active }) => (
-          <button
-            key={label}
-            type="button"
-            title={label}
-            aria-label={label}
-            aria-current={active ? 'page' : undefined}
-            className={`rounded-2xl p-3.5 transition-all ${
-              active ? 'bg-teal-50 text-teal-600 shadow-sm' : 'text-slate-300 hover:text-teal-500'
-            }`}
-          >
-            <Icon className="h-6 w-6" aria-hidden />
-          </button>
-        ))}
+        {items.map(({ icon: Icon, label, section }) => {
+          const isActive = section !== undefined && activeSection === section;
+          const isClickable = section !== undefined;
+
+          return (
+            <button
+              key={label}
+              type="button"
+              title={label}
+              aria-label={label}
+              aria-current={isActive ? 'page' : undefined}
+              disabled={!isClickable}
+              onClick={() => section && onNavigate(section)}
+              className={`rounded-2xl p-3.5 transition-all ${
+                isActive
+                  ? 'bg-teal-50 text-teal-600 shadow-sm'
+                  : isClickable
+                    ? 'text-slate-300 hover:text-teal-500'
+                    : 'cursor-not-allowed text-slate-200'
+              }`}
+            >
+              <Icon className="h-6 w-6" aria-hidden />
+            </button>
+          );
+        })}
       </nav>
     </aside>
   );

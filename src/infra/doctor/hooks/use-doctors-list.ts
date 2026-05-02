@@ -4,10 +4,9 @@ import { DoctorServiceRepository } from '../services/doctor.service.repository';
 
 const listDoctorsUseCase = new ListDoctorsUseCase(new DoctorServiceRepository());
 
-export function useDoctorsGetBySpecialty(specialtyId: string) {
+export function useDoctorsList() {
   return useQuery({
-    queryKey: ['doctors', specialtyId],
-    queryFn: () => listDoctorsUseCase.execute({ specialtyId }),
-    enabled: Boolean(specialtyId),
+    queryKey: ['doctors', 'list'],
+    queryFn: () => listDoctorsUseCase.execute(),
   });
 }

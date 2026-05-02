@@ -133,7 +133,7 @@ export function AppointmentCreateForm() {
           Doctor
           <select {...register('doctorId')}>
             <option value="">Seleccione</option>
-            {doctors.data?.data.map((doctor) => (
+            {doctors.data?.map((doctor) => (
               <option key={doctor.id} value={doctor.id}>
                 {doctor.name} ({doctor.cmp})
               </option>

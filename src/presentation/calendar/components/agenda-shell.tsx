@@ -20,7 +20,7 @@ export function AgendaShell({
   onMobileToggleBooking: () => void;
 }) {
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-[#F0F7F8] font-sans selection:bg-teal-100 lg:flex-row">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-[#F0F7F8] font-sans selection:bg-teal-100 lg:flex-row">
       {sidebar}
 
       <div className="flex min-h-0 flex-1 overflow-hidden flex-col lg:flex-row">

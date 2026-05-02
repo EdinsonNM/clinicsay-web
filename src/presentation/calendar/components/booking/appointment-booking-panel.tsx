@@ -156,7 +156,7 @@ export function AppointmentBookingPanel({
 
         {step === 3 ? (
           <DoctorStep
-            doctors={doctors.data?.data ?? []}
+            doctors={doctors.data ?? []}
             isLoading={doctors.isLoading}
             onBack={() => dispatch({ type: 'SET_STEP', step: 2 })}
             onSelectDoctor={(doctor) => {

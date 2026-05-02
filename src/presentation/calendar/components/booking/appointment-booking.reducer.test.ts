@@ -6,7 +6,7 @@ import { bookingReducer, createInitialBookingState } from './appointment-booking
 
 const patient: Patient = { id: 'p1', fullName: 'Ana', dni: '111' };
 const specialty: Specialty = { id: 's1', name: 'Cardiología' };
-const doctor: Doctor = { id: 'd1', name: 'Dr. House', cmp: 'CMP1' };
+const doctor: Doctor = { id: 'd1', name: 'Dr. House', cmp: 'CMP1', specialtyIds: ['s1'] };
 
 describe('createInitialBookingState', () => {
   it('inicia en paso 1 sin selección', () => {
